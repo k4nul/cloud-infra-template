@@ -1,0 +1,21 @@
+region       = "us-east-1"
+project_name = "platform"
+environment  = "staging"
+vpc_cidr     = "10.20.0.0/16"
+
+public_subnets = {
+  public_a = {
+    cidr_block        = "10.20.1.0/24"
+    availability_zone = "us-east-1a"
+  }
+  public_b = {
+    cidr_block        = "10.20.2.0/24"
+    availability_zone = "us-east-1b"
+  }
+}
+
+ingress_cidrs = []
+
+tags = {
+  Owner = "platform"
+}
