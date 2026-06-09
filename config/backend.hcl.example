@@ -1,0 +1,3 @@
+bucket = "replace-with-terraform-state-bucket"
+key    = "cloud-infra-template/dev/terraform.tfstate"
+region = "us-east-1"

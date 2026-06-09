@@ -1,0 +1,50 @@
+terraform {
+  required_version = ">= 1.6.0"
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = var.region
+}
+
+locals {
+  name_prefix = "${var.project_name}-${var.environment}"
+  common_tags = merge(var.tags, {
+    Project     = var.project_name
+    Environment = var.environment
+    ManagedBy   = "terraform"
+  })
+}
+
+module "network" {
+  source = "../../modules/network"
+
+  name_prefix    = local.name_prefix
+  vpc_cidr       = var.vpc_cidr
+  public_subnets = var.public_subnets
+  tags           = local.common_tags
+}
+
+module "iam" {
+  source = "../../modules/iam"
+
+  name_prefix         = local.name_prefix
+  trusted_services    = var.trusted_services
+  managed_policy_arns = var.managed_policy_arns
+  tags                = local.common_tags
+}
+
+module "deployment" {
+  source = "../../modules/deployment"
+
+  name_prefix   = local.name_prefix
+  vpc_id        = module.network.vpc_id
+  ingress_cidrs = var.ingress_cidrs
+  tags          = local.common_tags
+}
