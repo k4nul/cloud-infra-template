@@ -50,6 +50,11 @@ variable "ingress_cidrs" {
   default = []
 }
 
+variable "allow_public_ingress" {
+  type    = bool
+  default = false
+}
+
 variable "tags" {
   type    = map(string)
   default = {}

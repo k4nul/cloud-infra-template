@@ -47,7 +47,12 @@ variable "managed_policy_arns" {
 
 variable "ingress_cidrs" {
   type    = list(string)
-  default = ["0.0.0.0/0"]
+  default = []
+}
+
+variable "allow_public_ingress" {
+  type    = bool
+  default = false
 }
 
 variable "tags" {

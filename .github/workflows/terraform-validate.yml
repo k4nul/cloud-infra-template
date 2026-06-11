@@ -1,0 +1,46 @@
+name: Terraform validation
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/terraform-validate.yml"
+      - "scripts/validate.sh"
+      - "terraform/**"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/terraform-validate.yml"
+      - "scripts/validate.sh"
+      - "terraform/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform-validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Terraform fmt and validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CHECKPOINT_DISABLE: "1"
+      TF_IN_AUTOMATION: "1"
+      TF_INPUT: "0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.6.6"
+
+      - name: Validate Terraform
+        run: ./scripts/validate.sh
