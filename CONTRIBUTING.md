@@ -7,12 +7,13 @@ backend assumptions.
 ## Local Setup
 
 ```bash
-terraform fmt -check -recursive terraform
 ./scripts/validate.sh
 ```
 
 `./scripts/validate.sh` runs `terraform init -backend=false` and
-`terraform validate` for the checked-in environment roots.
+`terraform validate` for the checked-in environment roots. Keep
+`TERRAFORM_ENABLE_CHECKOV=1` as an optional local policy scan so public CI
+continues to run without repository secrets or extra credentials.
 
 ## Pull Request Checklist
 

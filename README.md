@@ -41,3 +41,8 @@ Run the same backend-disabled validation used by pull-request CI:
 ```bash
 ./scripts/validate.sh
 ```
+
+The validation script checks `dev`, `staging`, and `prod` by default. Set
+`TERRAFORM_ENV_DIRS` to a space-separated list of environment root paths to
+validate a smaller or custom matrix. Set `TERRAFORM_ENABLE_CHECKOV=1` to add an
+optional Checkov policy scan when `checkov` is installed locally.
