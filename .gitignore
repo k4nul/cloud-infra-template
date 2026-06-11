@@ -17,5 +17,8 @@ out/
 *.pem
 *.key
 *.p12
+AGENTS.md
+.codex/
+docs/management/
 .DS_Store
 Thumbs.db
