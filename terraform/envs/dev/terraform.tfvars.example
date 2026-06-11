@@ -14,7 +14,8 @@ public_subnets = {
   }
 }
 
-ingress_cidrs = ["0.0.0.0/0"]
+ingress_cidrs        = []
+allow_public_ingress = false
 
 tags = {
   Owner = "platform"

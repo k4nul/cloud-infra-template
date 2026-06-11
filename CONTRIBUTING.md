@@ -18,6 +18,8 @@ terraform fmt -check -recursive terraform
 
 - Do not commit `.terraform/`, state files, real `.tfvars`, plans, keys, or backend config.
 - Keep real account IDs, domains, regions, and role names out of examples.
+- Keep example ingress closed by default unless the change intentionally documents a safe CIDR and the `allow_public_ingress` opt-in.
+- Keep public pull-request CI backend-disabled and free of repository secrets.
 - Update `docs/infra-contract.md` when module contracts change.
 - Keep `terraform.tfvars.example` files safe to publish.
 

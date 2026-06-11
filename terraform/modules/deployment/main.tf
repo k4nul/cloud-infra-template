@@ -23,6 +23,13 @@ resource "aws_security_group" "workload" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  lifecycle {
+    precondition {
+      condition     = var.allow_public_ingress || !contains(var.ingress_cidrs, "0.0.0.0/0")
+      error_message = "Set allow_public_ingress to true before allowing 0.0.0.0/0 workload ingress."
+    }
+  }
+
   tags = merge(var.tags, {
     Name = "${var.name_prefix}-workload"
   })

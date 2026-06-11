@@ -43,8 +43,9 @@ module "iam" {
 module "deployment" {
   source = "../../modules/deployment"
 
-  name_prefix   = local.name_prefix
-  vpc_id        = module.network.vpc_id
-  ingress_cidrs = var.ingress_cidrs
-  tags          = local.common_tags
+  name_prefix          = local.name_prefix
+  vpc_id               = module.network.vpc_id
+  ingress_cidrs        = var.ingress_cidrs
+  allow_public_ingress = var.allow_public_ingress
+  tags                 = local.common_tags
 }

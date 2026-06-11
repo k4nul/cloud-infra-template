@@ -27,4 +27,17 @@ terraform init -backend=false
 terraform plan -var-file=terraform.tfvars.example
 ```
 
+The checked-in examples do not open workload ingress by default. Add explicit,
+public-safe CIDRs to `ingress_cidrs` only when the template consumer has decided
+that exposure is required. Set `allow_public_ingress = true` before allowing
+`0.0.0.0/0`.
+
 Use `config/backend.hcl.example` as a starting point when wiring remote state.
+
+## Validation
+
+Run the same backend-disabled validation used by pull-request CI:
+
+```bash
+./scripts/validate.sh
+```
