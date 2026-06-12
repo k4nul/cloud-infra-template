@@ -1,0 +1,99 @@
+# Troubleshooting
+
+Use this guide when local validation or pull-request CI fails. The commands
+below assume they are run from the repository root unless noted otherwise.
+
+## `terraform: not found`
+
+Install Terraform CLI `>= 1.6.0` and rerun:
+
+```bash
+terraform fmt -check -recursive terraform
+./scripts/validate.sh
+```
+
+CI currently uses Terraform `1.6.6`, so matching that version locally is the
+closest parity check.
+
+## Public-Safety Validation Failed
+
+`./scripts/validate.sh` prints this failure when a forbidden file is tracked by
+Git. Remove the tracked file from the commit and keep it local instead.
+
+Common fixes:
+
+- Move real variable values to an untracked `terraform.tfvars`.
+- Keep only `terraform.tfvars.example` files committed.
+- Move real remote state settings under `config/*.hcl` to an untracked local
+  file, such as `config/backend.hcl`.
+- Keep only `config/backend.hcl.example` committed.
+- Remove `.terraform/`, state, plan, lockfile, and key material from the index.
+
+The `.gitignore` already ignores these local operator files. If one appears in
+validation output, it was force-added or committed before the ignore rule was in
+place.
+
+## Terraform Formatting Failed
+
+Run the formatter, then rerun the check:
+
+```bash
+terraform fmt -recursive terraform
+terraform fmt -check -recursive terraform
+```
+
+Formatting changes are source changes, so they should be made in implementation
+or lint-triage work, not in a docs-only run.
+
+## Backend Or Credential Errors During Validation
+
+The standard validation path should not require remote state credentials because
+the script runs:
+
+```bash
+terraform init -backend=false -input=false -no-color
+```
+
+If validation prompts for backend or credential input, check that the command is
+running through `./scripts/validate.sh` or that manual Terraform commands include
+`-backend=false` for public-safe validation. The checked-in environment roots do
+not declare a backend block; remote state wiring belongs in consumer-owned
+environment configuration or a downstream fork.
+
+## Invalid Or Unsafe Ingress CIDRs
+
+`terraform/modules/deployment` validates that every `ingress_cidrs` entry is an
+IPv4 CIDR block. The workload security group also requires
+`allow_public_ingress = true` before `0.0.0.0/0` can be used.
+
+For the public examples, keep:
+
+```hcl
+ingress_cidrs        = []
+allow_public_ingress = false
+```
+
+Add real ingress only in untracked operator-owned variable files unless the
+example is intentionally documenting a safe public CIDR.
+
+## Optional Checkov Failure
+
+Checkov runs only when explicitly requested:
+
+```bash
+TERRAFORM_ENABLE_CHECKOV=1 ./scripts/validate.sh
+```
+
+If the command exits with `TERRAFORM_ENABLE_CHECKOV=1 requested but checkov is
+not installed.`, install Checkov or rerun the standard public CI lane without
+that environment variable.
+
+## Missing Environment Directory
+
+When using `TERRAFORM_ENV_DIRS`, provide repository-relative root module paths:
+
+```bash
+TERRAFORM_ENV_DIRS="terraform/envs/dev terraform/envs/staging" ./scripts/validate.sh
+```
+
+The script fails fast if any selected path does not exist.
