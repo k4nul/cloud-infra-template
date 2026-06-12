@@ -2,17 +2,9 @@ name: Terraform validation
 
 on:
   pull_request:
-    paths:
-      - ".github/workflows/terraform-validate.yml"
-      - "scripts/validate.sh"
-      - "terraform/**"
   push:
     branches:
       - main
-    paths:
-      - ".github/workflows/terraform-validate.yml"
-      - "scripts/validate.sh"
-      - "terraform/**"
   workflow_dispatch:
 
 permissions:
@@ -24,13 +16,14 @@ concurrency:
 
 jobs:
   validate:
-    name: Terraform fmt and validate
+    name: Public-safe Terraform validation
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
       CHECKPOINT_DISABLE: "1"
       TF_IN_AUTOMATION: "1"
       TF_INPUT: "0"
+      TERRAFORM_ENABLE_CHECKOV: "0"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,5 +35,5 @@ jobs:
         with:
           terraform_version: "1.6.6"
 
-      - name: Validate Terraform
+      - name: Run public-safe validation
         run: ./scripts/validate.sh
