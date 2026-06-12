@@ -33,6 +33,8 @@ that exposure is required. Set `allow_public_ingress = true` before allowing
 `0.0.0.0/0`.
 
 Use `config/backend.hcl.example` as a starting point when wiring remote state.
+See [docs/infra-contract.md](docs/infra-contract.md) for the shared input,
+output, example, and validation contract for the environment roots and modules.
 
 ## Validation
 
