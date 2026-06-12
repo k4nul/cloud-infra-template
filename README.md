@@ -38,7 +38,9 @@ output, example, and validation contract for the environment roots and modules.
 
 ## Validation
 
-Run the same backend-disabled validation used by pull-request CI:
+Pull-request CI runs public-safe validation on every PR so changes outside
+Terraform directories cannot bypass the artifact checks. Run the same
+backend-disabled validation locally:
 
 ```bash
 ./scripts/validate.sh
@@ -47,4 +49,8 @@ Run the same backend-disabled validation used by pull-request CI:
 The validation script checks `dev`, `staging`, and `prod` by default. Set
 `TERRAFORM_ENV_DIRS` to a space-separated list of environment root paths to
 validate a smaller or custom matrix. Set `TERRAFORM_ENABLE_CHECKOV=1` to add an
-optional Checkov policy scan when `checkov` is installed locally.
+optional Checkov policy scan when `checkov` is installed locally. The script
+also fails when tracked files include generated Terraform directories,
+lockfiles, state, real `.tfvars`, plans, private key material, or real backend
+config; only `.tfvars.example` files and `config/backend.hcl.example` are
+intended to be committed.

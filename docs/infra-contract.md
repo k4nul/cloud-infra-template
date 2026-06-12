@@ -8,6 +8,7 @@
 - Environment roots: keep environment-specific CIDR, region, names, and tags outside reusable modules
 - State: configure remote state through backend config, not committed secrets or local state files
 - Validation: pull-request CI and `./scripts/validate.sh` must use `terraform init -backend=false` so public checks do not need backend credentials
+- Public safety: pull-request CI runs without path filters and the validation script rejects tracked state, plans, real `.tfvars`, private key material, generated Terraform directories, lockfiles, and backend config other than `config/backend.hcl.example`
 
 ## Runtime And Provider Contract
 
@@ -53,6 +54,7 @@ The reusable modules expose only their owned resources:
 - `config/backend.hcl.example` is the only backend configuration example that should be committed. Real backend config remains operator-owned.
 - Example ingress stays closed with `ingress_cidrs = []` and `allow_public_ingress = false`.
 - Example validation should use backend-disabled initialization before plan or validate commands.
+- CI must run the public-safety file check for every pull request, including documentation or config-only changes.
 
 ## Upgrade And Validation Lane
 
