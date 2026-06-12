@@ -2,13 +2,13 @@
 
 ## Scope
 
-- Network module: creates the VPC, public subnets, internet gateway, and route table baseline
+- Network module: creates the VPC, public subnets with public IP assignment on launch, internet gateway, and public route table baseline
 - IAM module: creates a deployment role with parameterized trust and managed policies
-- Deployment module: creates a workload security group for downstream compute or cluster modules; ingress stays closed until callers provide allowed CIDRs, and wildcard ingress requires an explicit opt-in
+- Deployment module: creates a workload security group for downstream compute or cluster modules; inbound TCP/80 stays closed until callers provide allowed CIDRs, wildcard ingress requires an explicit opt-in, and egress allows outbound traffic to `0.0.0.0/0`
 - Environment roots: keep environment-specific CIDR, region, names, and tags outside reusable modules
-- State: configure remote state through backend config, not committed secrets or local state files
+- State: keep public validation backend-disabled. Consumers that adopt remote state should declare backend blocks in consumer-owned environment configuration and keep backend arguments in untracked config, not committed secrets or local state files.
 - Validation: pull-request CI and `./scripts/validate.sh` must use `terraform init -backend=false` so public checks do not need backend credentials
-- Public safety: pull-request CI runs without path filters and the validation script rejects tracked state, plans, real `.tfvars`, private key material, generated Terraform directories, lockfiles, and backend config other than `config/backend.hcl.example`
+- Public safety: pull-request CI runs without path filters and the validation script rejects tracked state, plans, real `.tfvars`, private key material, generated Terraform directories, lockfiles, and real backend config under `config/*.hcl` other than `config/backend.hcl.example`
 
 ## Runtime And Provider Contract
 
@@ -16,6 +16,15 @@
 - Provider dependency: each environment root requires `hashicorp/aws` with version constraint `~> 5.0`.
 - Module sources: environment roots consume only the checked-in `network`, `iam`, and `deployment` modules through relative paths.
 - Lockfiles: `.terraform.lock.hcl` files are not tracked by this template. A provider upgrade package should either keep that public-template policy explicit or intentionally add root lockfiles for every environment in the same change.
+
+## Reader Workflow
+
+- Start with [docs/onboarding.md](onboarding.md) for first-run validation and
+  safe local customization.
+- Use this contract when changing module inputs, outputs, examples, or
+  environment root wiring.
+- Use [docs/testing.md](testing.md) for the exact local and CI validation lane.
+- Use [docs/troubleshooting.md](troubleshooting.md) when validation fails.
 
 ## Inputs
 
@@ -26,6 +35,11 @@ The `dev`, `staging`, and `prod` environment roots share the same input contract
 - `trusted_services` and `managed_policy_arns` configure the deployment role.
 - `ingress_cidrs` and `allow_public_ingress` control workload ingress; wildcard ingress requires the explicit opt-in.
 - `tags` provides caller-owned tags that are merged with the template's project, environment, and managed-by tags.
+
+The committed `terraform.tfvars.example` files set the environment name, CIDR
+map, ingress defaults, and tags. They rely on environment-root defaults for
+`trusted_services = ["ec2.amazonaws.com"]` and `managed_policy_arns = []` until a
+consumer provides operator-owned IAM values in an untracked variable file.
 
 Reusable modules keep a narrower input surface:
 
@@ -51,9 +65,9 @@ The reusable modules expose only their owned resources:
 ## Examples
 
 - `terraform/envs/*/terraform.tfvars.example` files are safe public examples and must not contain account IDs, private CIDRs that reveal an organization, real role names, or secrets.
-- `config/backend.hcl.example` is the only backend configuration example that should be committed. Real backend config remains operator-owned.
+- `config/backend.hcl.example` is the only backend argument example that should be committed. The checked-in environment roots do not declare a backend block. Real backend config remains operator-owned, and the backend state `key` should be changed per environment in the untracked local copy when a consumer wires remote state.
 - Example ingress stays closed with `ingress_cidrs = []` and `allow_public_ingress = false`.
-- Example validation should use backend-disabled initialization before plan or validate commands.
+- Example validation should use backend-disabled initialization before manual plan or validate commands.
 - CI must run the public-safety file check for every pull request, including documentation or config-only changes.
 
 ## Upgrade And Validation Lane
