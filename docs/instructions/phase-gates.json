@@ -87,13 +87,12 @@
     },
     {
       "id": "public-ci-exists",
-      "status": "pending",
+      "status": "machine-check",
       "required_for_transition": true,
       "description": "Public-safe Terraform validation CI must exist.",
       "evidence": [
-        ".github/workflows"
-      ],
-      "on_failure": "Stay in public-ci-validation and add public-safe CI."
+        ".github/workflows/terraform-validate.yml"
+      ]
     },
     {
       "id": "terraform-state-untracked",
