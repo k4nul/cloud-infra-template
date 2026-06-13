@@ -1,0 +1,110 @@
+{
+  "schema_version": "1.0.0",
+  "project": "devops/cloud-infra-template",
+  "current_phase": "public-ci-validation",
+  "next_phase": "module-contract-hardening",
+  "transition": {
+    "intent": "Move to module-contract-hardening only after public-safe Terraform validation and repository hygiene gates are satisfied.",
+    "mode": "machine-gated-template-readiness",
+    "validation_command": "./scripts/validate.sh",
+    "transition_validation_command": "./scripts/validate.sh",
+    "decision_rule": "All required gates must be passed, machine-checkable, or waived before changing current_phase."
+  },
+  "phase_model": [
+    {
+      "id": "public-ci-validation",
+      "purpose": "Add and verify public-safe Terraform validation for pull requests.",
+      "allowed_work": [
+        "backend-disabled Terraform validation",
+        "public-safe CI",
+        "local validation script maintenance"
+      ],
+      "blocked_work": [
+        "real backend secrets",
+        "environment-specific tfvars",
+        "provider credentials"
+      ],
+      "exit_criteria": [
+        "public CI exists",
+        "validation script passes",
+        "Terraform state and plans are untracked"
+      ]
+    },
+    {
+      "id": "module-contract-hardening",
+      "purpose": "Document and validate reusable module input, output, and example contracts.",
+      "allowed_work": [
+        "input/output docs",
+        "example contract docs",
+        "environment matrix docs"
+      ],
+      "blocked_work": [
+        "private infrastructure assumptions"
+      ],
+      "exit_criteria": [
+        "module contract covers inputs, outputs, and examples"
+      ]
+    },
+    {
+      "id": "optional-iac-policy-scan",
+      "purpose": "Add an optional public-safe TFLint, Checkov, or equivalent IaC policy scan gate.",
+      "allowed_work": [
+        "optional lint/policy scan",
+        "documented setup instructions"
+      ],
+      "blocked_work": [
+        "mandatory tools that break minimal local validation"
+      ],
+      "exit_criteria": [
+        "optional IaC scan gate is documented"
+      ]
+    },
+    {
+      "id": "template-maintenance",
+      "purpose": "Maintain the public Terraform template after readiness gates are complete.",
+      "allowed_work": [
+        "maintenance-audit",
+        "security-review",
+        "docs-update"
+      ],
+      "blocked_work": [
+        "new infrastructure scope without an explicit phase"
+      ],
+      "exit_criteria": [
+        "new template scope is selected"
+      ]
+    }
+  ],
+  "required_gates": [
+    {
+      "id": "validation-script-passes",
+      "status": "machine-check",
+      "required_for_transition": true,
+      "description": "The repository validation script must pass.",
+      "evidence": [
+        "./scripts/validate.sh"
+      ]
+    },
+    {
+      "id": "public-ci-exists",
+      "status": "pending",
+      "required_for_transition": true,
+      "description": "Public-safe Terraform validation CI must exist.",
+      "evidence": [
+        ".github/workflows"
+      ],
+      "on_failure": "Stay in public-ci-validation and add public-safe CI."
+    },
+    {
+      "id": "terraform-state-untracked",
+      "status": "machine-check",
+      "required_for_transition": true,
+      "description": "Terraform local state, plans, and backend secrets must remain untracked.",
+      "evidence": [
+        ".terraform",
+        "terraform.tfstate",
+        "plan.out"
+      ]
+    }
+  ]
+}
