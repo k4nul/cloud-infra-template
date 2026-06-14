@@ -7,6 +7,51 @@ export TF_INPUT="${TF_INPUT:-0}"
 
 TERRAFORM_ENV_DIRS="${TERRAFORM_ENV_DIRS:-terraform/envs/dev terraform/envs/staging terraform/envs/prod}"
 TERRAFORM_ENABLE_CHECKOV="${TERRAFORM_ENABLE_CHECKOV:-0}"
+TERRAFORM_BIN="${TERRAFORM_BIN:-terraform}"
+CHECKOV_BIN="${CHECKOV_BIN:-checkov}"
+
+ensure_command_available() {
+  command_name=$1
+  install_hint=$2
+
+  case "$command_name" in
+    */*)
+      if [ -x "$command_name" ]; then
+        return 0
+      fi
+
+      echo "$command_name not found or not executable. $install_hint" >&2
+      return 127
+      ;;
+  esac
+
+  if command -v "$command_name" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if [ -n "${HOME:-}" ]; then
+    for tool_dir in "$HOME/.local/bin" "$HOME/bin"; do
+      if [ -x "$tool_dir/$command_name" ]; then
+        case ":${PATH:-}:" in
+          *":$tool_dir:"*) ;;
+          *) PATH="$tool_dir${PATH:+:$PATH}"; export PATH ;;
+        esac
+        return 0
+      fi
+    done
+  fi
+
+  if [ -x "/usr/local/bin/$command_name" ]; then
+    case ":${PATH:-}:" in
+      *":/usr/local/bin:"*) ;;
+      *) PATH="/usr/local/bin${PATH:+:$PATH}"; export PATH ;;
+    esac
+    return 0
+  fi
+
+  echo "$command_name not found. $install_hint" >&2
+  return 127
+}
 
 check_public_safe_files() {
   if ! command -v git >/dev/null 2>&1; then
@@ -46,8 +91,8 @@ validate_environment_roots() {
       return 1
     fi
 
-    terraform -chdir="$env_dir" init -backend=false -input=false -no-color
-    terraform -chdir="$env_dir" validate -no-color
+    "$TERRAFORM_BIN" -chdir="$env_dir" init -backend=false -input=false -no-color
+    "$TERRAFORM_BIN" -chdir="$env_dir" validate -no-color
   done
 }
 
@@ -56,15 +101,15 @@ run_optional_policy_scan() {
     return 0
   fi
 
-  if ! command -v checkov >/dev/null 2>&1; then
-    echo "TERRAFORM_ENABLE_CHECKOV=1 requested but checkov is not installed." >&2
-    return 127
-  fi
+  ensure_command_available "$CHECKOV_BIN" \
+    "Install Checkov, add it to PATH, or set CHECKOV_BIN before running with TERRAFORM_ENABLE_CHECKOV=1."
 
-  checkov -d terraform --quiet
+  "$CHECKOV_BIN" -d terraform --quiet
 }
 
 check_public_safe_files
-terraform fmt -check -recursive terraform
+ensure_command_available "$TERRAFORM_BIN" \
+  "Install Terraform CLI >= 1.6.0, add it to PATH, or set TERRAFORM_BIN."
+"$TERRAFORM_BIN" fmt -check -recursive terraform
 validate_environment_roots
 run_optional_policy_scan

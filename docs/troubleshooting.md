@@ -12,6 +12,15 @@ terraform fmt -check -recursive terraform
 ./scripts/validate.sh
 ```
 
+The validation script first uses `TERRAFORM_BIN` when set, then `terraform` from
+`PATH`, then common local install directories: `$HOME/.local/bin`, `$HOME/bin`,
+and `/usr/local/bin`. If Terraform is already installed outside those locations,
+run with an explicit binary path:
+
+```bash
+TERRAFORM_BIN=/path/to/terraform ./scripts/validate.sh
+```
+
 CI currently uses Terraform `1.6.6`, so matching that version locally is the
 closest parity check.
 
@@ -84,8 +93,8 @@ Checkov runs only when explicitly requested:
 TERRAFORM_ENABLE_CHECKOV=1 ./scripts/validate.sh
 ```
 
-If the command exits with `TERRAFORM_ENABLE_CHECKOV=1 requested but checkov is
-not installed.`, install Checkov or rerun the standard public CI lane without
+If the command reports that `checkov` was not found, install Checkov, set
+`CHECKOV_BIN=/path/to/checkov`, or rerun the standard public CI lane without
 that environment variable.
 
 ## Missing Environment Directory

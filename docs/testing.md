@@ -18,6 +18,12 @@ For a fast formatting check only:
 terraform fmt -check -recursive terraform
 ```
 
+`./scripts/validate.sh` uses `TERRAFORM_BIN` when set and otherwise runs
+`terraform`. If the command is not already on `PATH`, the script also checks
+`$HOME/.local/bin`, `$HOME/bin`, and `/usr/local/bin` before reporting a missing
+tool. This keeps local cron and automation checks aligned with interactive
+shells that install Terraform under a user-local directory.
+
 Run the full validation script after Terraform, example, module, input, or
 output changes. The standalone formatting command is useful when you want to
 check formatting before running the full environment matrix.
@@ -68,7 +74,8 @@ TERRAFORM_ENABLE_CHECKOV=1 ./scripts/validate.sh
 ```
 
 If Checkov is requested but not installed, the script exits with status `127`.
-That is an environment tooling blocker, not a Terraform contract failure.
+Set `CHECKOV_BIN` when Checkov is installed outside `PATH`. A missing Checkov
+binary is an environment tooling blocker, not a Terraform contract failure.
 
 ## Files That Must Stay Untracked
 
