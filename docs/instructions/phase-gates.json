@@ -1,13 +1,16 @@
 {
   "schema_version": "1.0.0",
   "project": "devops/cloud-infra-template",
-  "current_phase": "public-ci-validation",
-  "next_phase": "module-contract-hardening",
+  "current_phase": "module-contract-hardening",
+  "next_phase": "optional-iac-policy-scan",
   "transition": {
-    "intent": "Move to module-contract-hardening only after public-safe Terraform validation and repository hygiene gates are satisfied.",
+    "intent": "Move to optional-iac-policy-scan only after the module input, output, and example contract is documented and public-safe validation remains green.",
     "mode": "machine-gated-template-readiness",
     "validation_command": "./scripts/validate.sh",
     "transition_validation_command": "./scripts/validate.sh",
+    "phase_update_files": [
+      "docs/instructions/phase-gates.json"
+    ],
     "decision_rule": "All required gates must be passed, machine-checkable, or waived before changing current_phase."
   },
   "phase_model": [
@@ -86,23 +89,12 @@
       ]
     },
     {
-      "id": "public-ci-exists",
+      "id": "module-contract-documented",
       "status": "machine-check",
       "required_for_transition": true,
-      "description": "Public-safe Terraform validation CI must exist.",
+      "description": "The reusable module and environment contract must cover inputs, outputs, and public examples.",
       "evidence": [
-        ".github/workflows/terraform-validate.yml"
-      ]
-    },
-    {
-      "id": "terraform-state-untracked",
-      "status": "machine-check",
-      "required_for_transition": true,
-      "description": "Terraform local state, plans, and backend secrets must remain untracked.",
-      "evidence": [
-        ".terraform",
-        "terraform.tfstate",
-        "plan.out"
+        "docs/infra-contract.md"
       ]
     }
   ]
