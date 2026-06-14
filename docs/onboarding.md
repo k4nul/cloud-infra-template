@@ -23,6 +23,7 @@ environment-specific values in the `dev`, `staging`, and `prod` root modules.
 - `terraform/modules/deployment`: workload security group baseline.
 - `config/backend.hcl.example`: public-safe backend argument example only.
 - `docs/infra-contract.md`: input, output, example, and validation contract.
+- `docs/ci.md`: pull-request CI triggers, environment, and review expectations.
 - `docs/testing.md`: local and CI validation guidance.
 - `docs/troubleshooting.md`: common validation failures and fixes.
 
@@ -100,5 +101,5 @@ For template changes:
    deliberate environment difference is documented.
 3. Update `docs/infra-contract.md` when module inputs, outputs, examples, or
    validation expectations change.
-4. Run `terraform fmt -check -recursive terraform` and `./scripts/validate.sh`
-   before opening a pull request.
+4. Review [ci.md](ci.md), then run `terraform fmt -check -recursive terraform`
+   and `./scripts/validate.sh` before opening a pull request.

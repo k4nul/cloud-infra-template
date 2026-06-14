@@ -65,6 +65,9 @@ installation or credentials.
 Do not add pull-request path filters that would let documentation-only or
 configuration-only changes skip the public-safety file check.
 
+See [ci.md](ci.md) for the workflow triggers, pinned Terraform version,
+environment variables, and pull-request checklist expectations.
+
 ## Optional Policy Scan
 
 Checkov is optional and local by default:

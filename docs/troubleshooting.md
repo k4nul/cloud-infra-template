@@ -2,6 +2,7 @@
 
 Use this guide when local validation or pull-request CI fails. The commands
 below assume they are run from the repository root unless noted otherwise.
+For workflow triggers and CI environment details, see [ci.md](ci.md).
 
 ## `terraform: not found`
 
