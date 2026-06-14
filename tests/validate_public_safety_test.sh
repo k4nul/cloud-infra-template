@@ -2,7 +2,7 @@
 set -eu
 
 repo_root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
-test_tmp="${TMPDIR:-/tmp}/cloud-infra-template-test.$$"
+test_tmp=$(mktemp -d "${TMPDIR:-/tmp}/cloud-infra-template-test.XXXXXX")
 
 cleanup() {
   rm -rf "$test_tmp"
@@ -157,7 +157,6 @@ test_rejects_tracked_forbidden_files() {
   assert_contains "$output" "config/prod.hcl"
 }
 
-mkdir -p "$test_tmp"
 make_terraform_stub
 
 test_allows_public_examples
