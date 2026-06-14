@@ -1,17 +1,17 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "project": "devops/cloud-infra-template",
-  "current_phase": "optional-iac-policy-scan",
-  "next_phase": "template-maintenance",
+  "current_phase": "template-maintenance",
+  "next_phase": "",
   "transition": {
-    "intent": "Move to template-maintenance only after the optional IaC policy scan lane is documented, remains optional for public-safe validation, and public-safe validation remains green.",
-    "mode": "machine-gated-template-readiness",
+    "intent": "Keep the public Terraform template in template-maintenance after the optional IaC policy scan lane is documented, remains optional for public-safe validation, and public-safe validation remains green.",
+    "mode": "template-maintenance-no-pending-transition",
     "validation_command": "./scripts/validate.sh",
-    "transition_validation_command": "./scripts/validate.sh",
+    "transition_validation_command": "",
     "phase_update_files": [
       "docs/instructions/phase-gates.json"
     ],
-    "decision_rule": "All required gates must be passed, machine-checkable, or waived before changing current_phase."
+    "decision_rule": "Select a new next_phase and transition_validation_command before routing another phase-transition."
   },
   "phase_model": [
     {
