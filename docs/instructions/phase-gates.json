@@ -1,10 +1,10 @@
 {
   "schema_version": "1.0.0",
   "project": "devops/cloud-infra-template",
-  "current_phase": "module-contract-hardening",
-  "next_phase": "optional-iac-policy-scan",
+  "current_phase": "optional-iac-policy-scan",
+  "next_phase": "template-maintenance",
   "transition": {
-    "intent": "Move to optional-iac-policy-scan only after the module input, output, and example contract is documented and public-safe validation remains green.",
+    "intent": "Move to template-maintenance only after the optional IaC policy scan lane is documented, remains optional for public-safe validation, and public-safe validation remains green.",
     "mode": "machine-gated-template-readiness",
     "validation_command": "./scripts/validate.sh",
     "transition_validation_command": "./scripts/validate.sh",
@@ -89,12 +89,14 @@
       ]
     },
     {
-      "id": "module-contract-documented",
+      "id": "optional-iac-policy-scan-documented",
       "status": "machine-check",
       "required_for_transition": true,
-      "description": "The reusable module and environment contract must cover inputs, outputs, and public examples.",
+      "description": "The optional IaC policy scan lane must be documented and must not be mandatory for minimal public validation.",
       "evidence": [
-        "docs/infra-contract.md"
+        "docs/testing.md",
+        "docs/infra-contract.md",
+        "./scripts/validate.sh"
       ]
     }
   ]
