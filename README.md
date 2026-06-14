@@ -25,6 +25,8 @@ or account-specific infrastructure details.
   customization, and real-use setup boundaries.
 - [docs/infra-contract.md](docs/infra-contract.md): shared input, output,
   example, and validation contract.
+- [docs/ci.md](docs/ci.md): pull-request CI triggers, environment, and review
+  expectations.
 - [docs/testing.md](docs/testing.md): local validation, CI parity, optional
   Checkov, and public-safety file checks.
 - [docs/troubleshooting.md](docs/troubleshooting.md): common validation failures
@@ -82,4 +84,5 @@ config under `config/*.hcl`; only `.tfvars.example` files and
 `config/backend.hcl.example` are intended to be committed.
 
 See [docs/testing.md](docs/testing.md) for the validation matrix and
+[docs/ci.md](docs/ci.md) for pull-request CI behavior, and
 [docs/troubleshooting.md](docs/troubleshooting.md) for common failure fixes.
