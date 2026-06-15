@@ -86,6 +86,19 @@ allow_public_ingress = false
 Add real ingress only in untracked operator-owned variable files unless the
 example is intentionally documenting a safe public CIDR.
 
+## Optional TFLint Failure
+
+TFLint runs only when explicitly requested:
+
+```bash
+TERRAFORM_ENABLE_TFLINT=1 ./scripts/validate.sh
+```
+
+If the command reports that `tflint` was not found, install TFLint, set
+`TFLINT_BIN=/path/to/tflint`, or rerun the standard public CI lane without that
+environment variable. If the configured AWS ruleset plugin is missing, run
+`tflint --init` from the repository root and rerun validation.
+
 ## Optional Checkov Failure
 
 Checkov runs only when explicitly requested:

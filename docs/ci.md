@@ -33,10 +33,13 @@ CHECKPOINT_DISABLE=1
 TF_IN_AUTOMATION=1
 TF_INPUT=0
 TERRAFORM_ENABLE_CHECKOV=0
+TERRAFORM_ENABLE_TFLINT=0
 ```
 
-Checkov is disabled in public CI so the required lane has no extra policy
-scanner dependency. Run the optional local policy scan with
+TFLint and Checkov are disabled in public CI so the required lane has no extra
+scanner dependency. Run the optional local TFLint scan with
+`TERRAFORM_ENABLE_TFLINT=1 ./scripts/validate.sh` after installing TFLint and
+running `tflint --init`, or run the optional local Checkov scan with
 `TERRAFORM_ENABLE_CHECKOV=1 ./scripts/validate.sh` when Checkov is installed.
 
 ## Validation Commands
@@ -47,10 +50,10 @@ CI first runs the validation contract test:
 ./tests/validate_public_safety_test.sh
 ```
 
-That test uses temporary Git repositories and stubbed Terraform and Checkov
-commands to verify the public-safety file gate, the default environment matrix,
-custom `TERRAFORM_ENV_DIRS` behavior, and the optional Checkov opt-in without
-needing provider downloads.
+That test uses temporary Git repositories and stubbed Terraform, TFLint, and
+Checkov commands to verify the public-safety file gate, the default environment
+matrix, custom `TERRAFORM_ENV_DIRS` behavior, and the optional TFLint and
+Checkov opt-ins without needing provider downloads.
 
 CI then runs the public-safe Terraform validation:
 
@@ -67,7 +70,8 @@ The validation script:
 3. initializes each selected environment root with `terraform init
    -backend=false -input=false -no-color`,
 4. runs `terraform validate -no-color` for each selected environment root,
-5. skips Checkov unless `TERRAFORM_ENABLE_CHECKOV=1` is set.
+5. skips TFLint unless `TERRAFORM_ENABLE_TFLINT=1` is set,
+6. skips Checkov unless `TERRAFORM_ENABLE_CHECKOV=1` is set.
 
 The default environment matrix is:
 

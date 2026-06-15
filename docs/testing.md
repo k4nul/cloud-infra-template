@@ -44,7 +44,9 @@ The script performs these checks in order:
 3. Runs `terraform init -backend=false -input=false -no-color` for each selected
    environment root.
 4. Runs `terraform validate -no-color` for each selected environment root.
-5. Runs `checkov -d terraform --quiet` only when
+5. Runs `tflint --recursive --chdir=terraform` only when
+   `TERRAFORM_ENABLE_TFLINT=1` is set.
+6. Runs `checkov -d terraform --quiet` only when
    `TERRAFORM_ENABLE_CHECKOV=1` is set.
 
 By default, the environment matrix is:
@@ -61,8 +63,8 @@ TERRAFORM_ENV_DIRS="terraform/envs/dev" ./scripts/validate.sh
 
 `./tests/validate_public_safety_test.sh` covers the validation wrapper behavior
 around the tracked-file gate, the default matrix, custom `TERRAFORM_ENV_DIRS`,
-and the Checkov opt-in by running against temporary repositories with stubbed
-tool commands.
+and the optional TFLint and Checkov opt-ins by running against temporary
+repositories with stubbed tool commands.
 
 ## Pull-Request CI Parity
 
@@ -70,8 +72,8 @@ tool commands.
 then the same validation script for pull requests, pushes to `main`, and manual
 workflow dispatches. The workflow has no pull-request path filters, pins
 Terraform `1.6.6`, disables Terraform input prompts, and keeps
-`TERRAFORM_ENABLE_CHECKOV=0` so public CI does not require extra policy-scanner
-installation or credentials.
+`TERRAFORM_ENABLE_TFLINT=0` and `TERRAFORM_ENABLE_CHECKOV=0` so public CI does
+not require extra scanner installation, plugin downloads, or credentials.
 
 Do not add pull-request path filters that would let documentation-only or
 configuration-only changes skip the public-safety file check.
@@ -80,6 +82,18 @@ See [ci.md](ci.md) for the workflow triggers, pinned Terraform version,
 environment variables, and pull-request checklist expectations.
 
 ## Optional Policy Scan
+
+TFLint is optional and local by default. Install TFLint, run `tflint --init`
+from the repository root to install the configured AWS ruleset plugin, then run:
+
+```bash
+TERRAFORM_ENABLE_TFLINT=1 ./scripts/validate.sh
+```
+
+If TFLint is requested but not installed, the script exits with status `127`.
+Set `TFLINT_BIN` when TFLint is installed outside `PATH`. A missing TFLint
+binary or uninitialized plugin cache is an environment tooling blocker, not a
+Terraform contract failure.
 
 Checkov is optional and local by default:
 

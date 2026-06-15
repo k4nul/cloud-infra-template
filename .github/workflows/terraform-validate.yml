@@ -24,6 +24,7 @@ jobs:
       TF_IN_AUTOMATION: "1"
       TF_INPUT: "0"
       TERRAFORM_ENABLE_CHECKOV: "0"
+      TERRAFORM_ENABLE_TFLINT: "0"
     steps:
       - name: Checkout
         uses: actions/checkout@v4

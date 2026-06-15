@@ -76,12 +76,14 @@ backend-disabled validation locally:
 
 The validation script checks `dev`, `staging`, and `prod` by default. Set
 `TERRAFORM_ENV_DIRS` to a space-separated list of environment root paths to
-validate a smaller or custom matrix. Set `TERRAFORM_ENABLE_CHECKOV=1` to add an
-optional Checkov policy scan when `checkov` is installed locally. The script
-also fails when tracked files include generated Terraform directories,
-lockfiles, state, real `.tfvars`, plans, private key material, or real backend
-config under `config/*.hcl`; only `.tfvars.example` files and
-`config/backend.hcl.example` are intended to be committed.
+validate a smaller or custom matrix. Set `TERRAFORM_ENABLE_TFLINT=1` to add an
+optional provider-aware TFLint scan after installing TFLint and running
+`tflint --init`, or set `TERRAFORM_ENABLE_CHECKOV=1` to add an optional Checkov
+policy scan when `checkov` is installed locally. The script also fails when
+tracked files include generated Terraform directories, lockfiles, state, real
+`.tfvars`, plans, private key material, or real backend config under
+`config/*.hcl`; only `.tfvars.example` files and `config/backend.hcl.example`
+are intended to be committed.
 
 See [docs/testing.md](docs/testing.md) for the validation matrix and
 [docs/ci.md](docs/ci.md) for pull-request CI behavior, and

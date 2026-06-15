@@ -87,6 +87,21 @@ STUB
   chmod +x "$test_tmp/bin/checkov"
 }
 
+make_tflint_stub() {
+  mkdir -p "$test_tmp/bin"
+  cat >"$test_tmp/bin/tflint" <<'STUB'
+#!/usr/bin/env sh
+set -eu
+
+if [ -n "${TFLINT_STUB_LOG:-}" ]; then
+  printf '%s\n' "$*" >>"$TFLINT_STUB_LOG"
+fi
+
+exit 0
+STUB
+  chmod +x "$test_tmp/bin/tflint"
+}
+
 make_home_terraform_stub() {
   home_dir=$1
 
@@ -133,6 +148,23 @@ fi
 exit 0
 STUB
   chmod +x "$home_dir/bin/checkov"
+}
+
+make_home_tflint_stub() {
+  home_dir=$1
+
+  mkdir -p "$home_dir/bin"
+  cat >"$home_dir/bin/tflint" <<'STUB'
+#!/usr/bin/env sh
+set -eu
+
+if [ -n "${TFLINT_STUB_LOG:-}" ]; then
+  printf '%s\n' "$*" >>"$TFLINT_STUB_LOG"
+fi
+
+exit 0
+STUB
+  chmod +x "$home_dir/bin/tflint"
 }
 
 make_target_repo() {
@@ -322,6 +354,39 @@ test_checkov_runs_only_when_enabled() {
   assert_contains "$checkov_calls" "-d terraform --quiet"
 }
 
+test_tflint_runs_only_when_enabled() {
+  target="$test_tmp/tflint-opt-in"
+  make_target_repo "$target"
+  tflint_log="$test_tmp/tflint.log"
+
+  (
+    cd "$target"
+    PATH="$test_tmp/bin:$PATH" \
+      TFLINT_STUB_LOG="$tflint_log" \
+      "$repo_root/scripts/validate.sh"
+  ) >"$test_tmp/validate-tflint-default.out" 2>&1 || {
+    output=$(cat "$test_tmp/validate-tflint-default.out")
+    fail "expected default TFLint-disabled validation to pass, got: $output"
+  }
+
+  tflint_calls=$(read_file_or_empty "$tflint_log")
+  [ -z "$tflint_calls" ] || fail "expected TFLint to be skipped by default"
+
+  (
+    cd "$target"
+    PATH="$test_tmp/bin:$PATH" \
+      TERRAFORM_ENABLE_TFLINT=1 \
+      TFLINT_STUB_LOG="$tflint_log" \
+      "$repo_root/scripts/validate.sh"
+  ) >"$test_tmp/validate-tflint-enabled.out" 2>&1 || {
+    output=$(cat "$test_tmp/validate-tflint-enabled.out")
+    fail "expected TFLint-enabled validation to pass, got: $output"
+  }
+
+  tflint_calls=$(cat "$tflint_log")
+  assert_contains "$tflint_calls" "--recursive --chdir=terraform"
+}
+
 test_discovers_terraform_from_home_local_bin() {
   target="$test_tmp/home-local-terraform"
   home_dir="$test_tmp/home-local"
@@ -369,6 +434,30 @@ test_discovers_checkov_from_home_bin_when_enabled() {
   assert_contains "$checkov_calls" "-d terraform --quiet"
 }
 
+test_discovers_tflint_from_home_bin_when_enabled() {
+  target="$test_tmp/home-bin-tflint"
+  home_dir="$test_tmp/home-bin-tflint"
+  tflint_log="$test_tmp/home-bin-tflint.log"
+  make_target_repo "$target"
+  make_home_tflint_stub "$home_dir"
+
+  (
+    cd "$target"
+    PATH="/usr/bin:/bin" \
+      HOME="$home_dir" \
+      TERRAFORM_BIN="$test_tmp/bin/terraform" \
+      TERRAFORM_ENABLE_TFLINT=1 \
+      TFLINT_STUB_LOG="$tflint_log" \
+      "$repo_root/scripts/validate.sh"
+  ) >"$test_tmp/validate-home-bin-tflint.out" 2>&1 || {
+    output=$(cat "$test_tmp/validate-home-bin-tflint.out")
+    fail "expected TFLint lookup in HOME/bin to pass, got: $output"
+  }
+
+  tflint_calls=$(cat "$tflint_log")
+  assert_contains "$tflint_calls" "--recursive --chdir=terraform"
+}
+
 test_missing_absolute_terraform_bin_reports_executable_path() {
   target="$test_tmp/missing-absolute-terraform"
   missing_terraform="$test_tmp/missing/bin/terraform"
@@ -389,8 +478,30 @@ test_missing_absolute_terraform_bin_reports_executable_path() {
   assert_contains "$output" "Install Terraform CLI >= 1.6.0"
 }
 
+test_missing_absolute_tflint_bin_reports_executable_path() {
+  target="$test_tmp/missing-absolute-tflint"
+  missing_tflint="$test_tmp/missing/bin/tflint"
+  make_target_repo "$target"
+
+  set +e
+  output=$(
+    cd "$target"
+    PATH="$test_tmp/bin:$PATH" \
+      TERRAFORM_ENABLE_TFLINT=1 \
+      TFLINT_BIN="$missing_tflint" \
+      "$repo_root/scripts/validate.sh" 2>&1
+  )
+  status=$?
+  set -e
+
+  [ "$status" -eq 127 ] || fail "expected missing absolute TFLINT_BIN to exit 127"
+  assert_contains "$output" "$missing_tflint not found or not executable."
+  assert_contains "$output" "Install TFLint"
+}
+
 make_terraform_stub
 make_checkov_stub
+make_tflint_stub
 
 test_allows_public_examples
 test_ignores_untracked_forbidden_files
@@ -398,8 +509,11 @@ test_rejects_tracked_forbidden_files
 test_default_matrix_runs_all_environment_roots
 test_custom_matrix_limits_environment_roots
 test_checkov_runs_only_when_enabled
+test_tflint_runs_only_when_enabled
 test_discovers_terraform_from_home_local_bin
 test_discovers_checkov_from_home_bin_when_enabled
+test_discovers_tflint_from_home_bin_when_enabled
 test_missing_absolute_terraform_bin_reports_executable_path
+test_missing_absolute_tflint_bin_reports_executable_path
 
 echo "ok - validate public-safety validation contract"

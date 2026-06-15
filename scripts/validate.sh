@@ -7,8 +7,10 @@ export TF_INPUT="${TF_INPUT:-0}"
 
 TERRAFORM_ENV_DIRS="${TERRAFORM_ENV_DIRS:-terraform/envs/dev terraform/envs/staging terraform/envs/prod}"
 TERRAFORM_ENABLE_CHECKOV="${TERRAFORM_ENABLE_CHECKOV:-0}"
+TERRAFORM_ENABLE_TFLINT="${TERRAFORM_ENABLE_TFLINT:-0}"
 TERRAFORM_BIN="${TERRAFORM_BIN:-terraform}"
 CHECKOV_BIN="${CHECKOV_BIN:-checkov}"
+TFLINT_BIN="${TFLINT_BIN:-tflint}"
 
 ensure_command_available() {
   command_name=$1
@@ -107,9 +109,21 @@ run_optional_policy_scan() {
   "$CHECKOV_BIN" -d terraform --quiet
 }
 
+run_optional_tflint_scan() {
+  if [ "$TERRAFORM_ENABLE_TFLINT" != "1" ]; then
+    return 0
+  fi
+
+  ensure_command_available "$TFLINT_BIN" \
+    "Install TFLint, run tflint --init if using plugins, add it to PATH, or set TFLINT_BIN before running with TERRAFORM_ENABLE_TFLINT=1."
+
+  "$TFLINT_BIN" --recursive --chdir=terraform
+}
+
 check_public_safe_files
 ensure_command_available "$TERRAFORM_BIN" \
   "Install Terraform CLI >= 1.6.0, add it to PATH, or set TERRAFORM_BIN."
 "$TERRAFORM_BIN" fmt -check -recursive terraform
 validate_environment_roots
+run_optional_tflint_scan
 run_optional_policy_scan

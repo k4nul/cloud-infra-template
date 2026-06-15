@@ -8,6 +8,7 @@
 - Environment roots: keep environment-specific CIDR, region, names, and tags outside reusable modules
 - State: keep public validation backend-disabled. Consumers that adopt remote state should declare backend blocks in consumer-owned environment configuration and keep backend arguments in untracked config, not committed secrets or local state files.
 - Validation: pull-request CI and `./scripts/validate.sh` must use `terraform init -backend=false` so public checks do not need backend credentials
+- Optional lint: provider-aware TFLint checks are local opt-in through `TERRAFORM_ENABLE_TFLINT=1`; public CI and standard validation must not require TFLint, plugin downloads, credentials, or backend state.
 - Public safety: pull-request CI runs without path filters and the validation script rejects tracked state, plans, real `.tfvars`, private key material, generated Terraform directories, lockfiles, and real backend config under `config/*.hcl` other than `config/backend.hcl.example`
 
 ## Runtime And Provider Contract
@@ -74,4 +75,5 @@ The reusable modules expose only their owned resources:
 
 - Keep Terraform and AWS provider constraint changes synchronized across `terraform/envs/dev`, `terraform/envs/staging`, and `terraform/envs/prod`.
 - After any provider, module, input, output, or example change, run `terraform fmt -check -recursive terraform` and `./scripts/validate.sh`.
+- Run `TERRAFORM_ENABLE_TFLINT=1 ./scripts/validate.sh` only when TFLint is installed and `tflint --init` has prepared the configured AWS ruleset plugin; public CI keeps this provider-aware lint lane optional.
 - Run `TERRAFORM_ENABLE_CHECKOV=1 ./scripts/validate.sh` only when Checkov is installed locally; public CI keeps this policy scan optional.
