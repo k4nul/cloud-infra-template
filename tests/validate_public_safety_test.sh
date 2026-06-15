@@ -199,10 +199,11 @@ test_allows_public_examples() {
   mkdir -p "$target/terraform/envs/dev"
   touch "$target/config/backend.hcl.example"
   touch "$target/terraform/envs/dev/terraform.tfvars.example"
+  touch "$target/.env.example"
 
   (
     cd "$target"
-    git add config/backend.hcl.example terraform/envs/dev/terraform.tfvars.example
+    git add .env.example config/backend.hcl.example terraform/envs/dev/terraform.tfvars.example
   )
 
   run_validation "$target" >"$test_tmp/validate-public-examples.out" 2>&1 || {
@@ -218,6 +219,10 @@ test_ignores_untracked_forbidden_files() {
   touch "$target/terraform/envs/dev/terraform.tfvars"
   touch "$target/.terraform.lock.hcl"
   touch "$target/config/prod.hcl"
+  touch "$target/.env"
+  touch "$target/.terraformrc"
+  touch "$target/crash.log"
+  touch "$target/id_ed25519"
 
   run_validation "$target" >"$test_tmp/validate-untracked.out" 2>&1 || {
     output=$(cat "$test_tmp/validate-untracked.out")
@@ -230,7 +235,14 @@ test_rejects_tracked_forbidden_files() {
   make_target_repo "$target"
 
   mkdir -p "$target/terraform/envs/dev/.terraform/providers" \
+    "$target/.terraform.d" \
     "$target/nested"
+  touch "$target/.env"
+  touch "$target/.env.local"
+  touch "$target/.envrc"
+  touch "$target/.terraformrc"
+  touch "$target/terraform.rc"
+  touch "$target/.terraform.d/credentials.tfrc.json"
   touch "$target/.terraform.lock.hcl"
   touch "$target/terraform/envs/dev/.terraform/providers/cache.txt"
   touch "$target/terraform/envs/dev/terraform.tfvars"
@@ -238,12 +250,25 @@ test_rejects_tracked_forbidden_files() {
   touch "$target/terraform.tfstate"
   touch "$target/terraform.tfstate.backup"
   touch "$target/app.tfplan"
+  touch "$target/app.tfplan.json"
   touch "$target/app.plan"
+  touch "$target/app.plan.json"
   touch "$target/plan-dev.out"
+  touch "$target/plan-dev.json"
   touch "$target/nested/plan-prod.out"
+  touch "$target/crash.log"
+  touch "$target/crash.123.log"
   touch "$target/secret.pem"
   touch "$target/secret.key"
   touch "$target/secret.p12"
+  touch "$target/secret.pfx"
+  touch "$target/secret.p8"
+  touch "$target/secret.jks"
+  touch "$target/secret.keystore"
+  touch "$target/id_rsa"
+  touch "$target/id_dsa"
+  touch "$target/id_ecdsa"
+  touch "$target/id_ed25519"
   touch "$target/config/prod.hcl"
 
   (
@@ -259,6 +284,12 @@ test_rejects_tracked_forbidden_files() {
   [ "$status" -ne 0 ] || fail "expected tracked forbidden files to fail validation"
 
   assert_contains "$output" "Public-safety validation failed."
+  assert_contains "$output" ".env"
+  assert_contains "$output" ".env.local"
+  assert_contains "$output" ".envrc"
+  assert_contains "$output" ".terraformrc"
+  assert_contains "$output" "terraform.rc"
+  assert_contains "$output" ".terraform.d/credentials.tfrc.json"
   assert_contains "$output" ".terraform.lock.hcl"
   assert_contains "$output" "terraform/envs/dev/.terraform/providers/cache.txt"
   assert_contains "$output" "terraform/envs/dev/terraform.tfvars"
@@ -266,12 +297,25 @@ test_rejects_tracked_forbidden_files() {
   assert_contains "$output" "terraform.tfstate"
   assert_contains "$output" "terraform.tfstate.backup"
   assert_contains "$output" "app.tfplan"
+  assert_contains "$output" "app.tfplan.json"
   assert_contains "$output" "app.plan"
+  assert_contains "$output" "app.plan.json"
   assert_contains "$output" "plan-dev.out"
+  assert_contains "$output" "plan-dev.json"
   assert_contains "$output" "nested/plan-prod.out"
+  assert_contains "$output" "crash.log"
+  assert_contains "$output" "crash.123.log"
   assert_contains "$output" "secret.pem"
   assert_contains "$output" "secret.key"
   assert_contains "$output" "secret.p12"
+  assert_contains "$output" "secret.pfx"
+  assert_contains "$output" "secret.p8"
+  assert_contains "$output" "secret.jks"
+  assert_contains "$output" "secret.keystore"
+  assert_contains "$output" "id_rsa"
+  assert_contains "$output" "id_dsa"
+  assert_contains "$output" "id_ecdsa"
+  assert_contains "$output" "id_ed25519"
   assert_contains "$output" "config/prod.hcl"
 }
 

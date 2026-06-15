@@ -18,6 +18,7 @@ Never commit:
 
 - Terraform state or plan files
 - real `.tfvars`
+- local env files, Terraform CLI credentials, or crash logs
 - backend config containing bucket names or credentials
 - cloud account IDs, access keys, private keys, or tokens
 - production hostnames or internal CIDR maps unless they are intentionally public

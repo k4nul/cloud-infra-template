@@ -77,9 +77,9 @@ Keep organization-specific values out of the repository:
 terraform init -backend-config=../../../config/backend.hcl
 ```
 
-Real `.tfvars`, backend config, state, plans, generated `.terraform/`
-directories, lockfiles, keys, and account-specific details must remain
-untracked.
+Real `.tfvars`, backend config, state, plans, crash logs, generated
+`.terraform/` directories, lockfiles, local env or Terraform CLI credential
+files, keys, and account-specific details must remain untracked.
 
 ## Public Network And Workload Defaults
 

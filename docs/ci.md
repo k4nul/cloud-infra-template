@@ -63,8 +63,9 @@ CI then runs the public-safe Terraform validation:
 
 The validation script:
 
-1. rejects tracked Terraform state, plans, real `.tfvars`, private key material,
-   generated `.terraform/` directories, lockfiles, and real backend config under
+1. rejects tracked Terraform state, plans, real `.tfvars`, crash logs, local env
+   or Terraform CLI credential files, private key material, generated
+   `.terraform/` directories, lockfiles, and real backend config under
    `config/*.hcl`,
 2. runs `terraform fmt -check -recursive terraform`,
 3. initializes each selected environment root with `terraform init
@@ -87,8 +88,9 @@ Before requesting review:
   request validation section,
 - keep only public examples committed, such as `terraform.tfvars.example` and
   `config/backend.hcl.example`,
-- keep real `.tfvars`, backend config, state, plans, provider lockfiles,
-  generated Terraform directories, keys, and account-specific values untracked,
+- keep real `.tfvars`, backend config, state, plans, crash logs, local env or
+  Terraform CLI credential files, provider lockfiles, generated Terraform
+  directories, keys, and account-specific values untracked,
 - update `docs/infra-contract.md` when module inputs, outputs, examples,
   validation behavior, or environment-root wiring changes.
 

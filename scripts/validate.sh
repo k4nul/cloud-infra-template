@@ -68,11 +68,19 @@ check_public_safe_files() {
   violations=$(
     git ls-files | while IFS= read -r tracked_file; do
       case "$tracked_file" in
-        config/backend.hcl.example | *.tfvars.example)
+        config/backend.hcl.example | *.tfvars.example | .env.example | */.env.example)
           ;;
         .terraform/* | */.terraform/* | .terraform.lock.hcl | */.terraform.lock.hcl | \
-          *.tfvars | *.tfvars.json | *.tfstate | *.tfstate.* | *.tfplan | *.plan | \
-          plan*.out | */plan*.out | *.pem | *.key | *.p12 | config/*.hcl)
+          .terraformrc | */.terraformrc | terraform.rc | */terraform.rc | \
+          .terraform.d/* | */.terraform.d/* | \
+          *.tfvars | *.tfvars.json | *.tfstate | *.tfstate.* | *.tfplan | \
+          *.tfplan.json | *.plan | *.plan.json | plan*.out | */plan*.out | \
+          plan*.json | */plan*.json | \
+          crash.log | */crash.log | crash.*.log | */crash.*.log | \
+          .env | */.env | .env.* | */.env.* | .envrc | */.envrc | \
+          *.pem | *.key | *.p12 | *.pfx | *.p8 | *.jks | *.keystore | \
+          id_rsa | */id_rsa | id_dsa | */id_dsa | id_ecdsa | */id_ecdsa | \
+          id_ed25519 | */id_ed25519 | config/*.hcl)
           printf '%s\n' "$tracked_file"
           ;;
       esac
@@ -80,7 +88,7 @@ check_public_safe_files() {
   )
 
   if [ -n "$violations" ]; then
-    echo "Public-safety validation failed. Remove tracked generated, secret, state, plan, or real backend files:" >&2
+    echo "Public-safety validation failed. Remove tracked generated, secret, state, plan, local credential, or real backend files:" >&2
     printf '%s\n' "$violations" | sed 's/^/  - /' >&2
     return 1
   fi

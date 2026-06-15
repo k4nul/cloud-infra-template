@@ -37,7 +37,8 @@ Common fixes:
 - Move real remote state settings under `config/*.hcl` to an untracked local
   file, such as `config/backend.hcl`.
 - Keep only `config/backend.hcl.example` committed.
-- Remove `.terraform/`, state, plan, lockfile, and key material from the index.
+- Remove `.terraform/`, state, plan, lockfile, crash log, local env or Terraform
+  CLI credential files, and key material from the index.
 
 The `.gitignore` already ignores these local operator files. If one appears in
 validation output, it was force-added or committed before the ignore rule was in

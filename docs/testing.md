@@ -39,7 +39,8 @@ check formatting before running the full environment matrix.
 The script performs these checks in order:
 
 1. Uses `git ls-files` to reject tracked generated, state, plan, secret, real
-   `.tfvars`, lockfile, private key, or real backend files under `config/*.hcl`.
+   `.tfvars`, lockfile, crash log, local env or Terraform CLI credential,
+   private key, or real backend files under `config/*.hcl`.
 2. Runs `terraform fmt -check -recursive terraform`.
 3. Runs `terraform init -backend=false -input=false -no-color` for each selected
    environment root.
@@ -114,8 +115,12 @@ The validation script rejects these tracked file classes:
 - Terraform state files.
 - Terraform plan files.
 - Real `.tfvars` or `.tfvars.json` files.
-- Private key material such as `.pem`, `.key`, or `.p12` files.
+- Terraform crash logs.
+- Local env and Terraform CLI credential files such as `.env`, `.envrc`,
+  `.terraformrc`, `terraform.rc`, or `.terraform.d/` contents.
+- Private key material such as `.pem`, `.key`, `.p12`, `.pfx`, `.p8`, `.jks`,
+  `.keystore`, `id_rsa`, `id_dsa`, `id_ecdsa`, or `id_ed25519` files.
 - Real backend config under `config/*.hcl`.
 
-The allowed public examples are `terraform.tfvars.example` files and
-`config/backend.hcl.example`.
+The allowed public examples are `terraform.tfvars.example` files,
+`.env.example`, and `config/backend.hcl.example`.

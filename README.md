@@ -7,8 +7,9 @@ Terraform template for AWS network, IAM, and deployment infrastructure.
 This repository is prepared for public collaboration under the [MIT License](LICENSE).
 See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and
 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) before opening issues or pull requests.
-Do not commit Terraform state, real `.tfvars`, backend credentials, plans, keys,
-or account-specific infrastructure details.
+Do not commit Terraform state, real `.tfvars`, backend credentials, plans, local
+env or Terraform CLI credentials, crash logs, keys, or account-specific
+infrastructure details.
 
 ## Layout
 
@@ -81,9 +82,10 @@ optional provider-aware TFLint scan after installing TFLint and running
 `tflint --init`, or set `TERRAFORM_ENABLE_CHECKOV=1` to add an optional Checkov
 policy scan when `checkov` is installed locally. The script also fails when
 tracked files include generated Terraform directories, lockfiles, state, real
-`.tfvars`, plans, private key material, or real backend config under
-`config/*.hcl`; only `.tfvars.example` files and `config/backend.hcl.example`
-are intended to be committed.
+`.tfvars`, plans, crash logs, local env or Terraform CLI credential files,
+private key material, or real backend config under `config/*.hcl`; only
+`.tfvars.example`, `.env.example`, and `config/backend.hcl.example` are intended
+to be committed.
 
 See [docs/testing.md](docs/testing.md) for the validation matrix and
 [docs/ci.md](docs/ci.md) for pull-request CI behavior, and
