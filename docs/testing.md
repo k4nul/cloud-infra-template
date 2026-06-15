@@ -18,6 +18,12 @@ For a fast formatting check only:
 terraform fmt -check -recursive terraform
 ```
 
+To test the validation script contract without downloading providers:
+
+```bash
+./tests/validate_public_safety_test.sh
+```
+
 `./scripts/validate.sh` uses `TERRAFORM_BIN` when set and otherwise runs
 `terraform`. If the command is not already on `PATH`, the script also checks
 `$HOME/.local/bin`, `$HOME/bin`, and `/usr/local/bin` before reporting a missing
@@ -53,12 +59,17 @@ To validate a smaller matrix locally:
 TERRAFORM_ENV_DIRS="terraform/envs/dev" ./scripts/validate.sh
 ```
 
+`./tests/validate_public_safety_test.sh` covers the validation wrapper behavior
+around the tracked-file gate, the default matrix, custom `TERRAFORM_ENV_DIRS`,
+and the Checkov opt-in by running against temporary repositories with stubbed
+tool commands.
+
 ## Pull-Request CI Parity
 
-`.github/workflows/terraform-validate.yml` runs the same script for pull
-requests, pushes to `main`, and manual workflow dispatches. The workflow has no
-pull-request path filters, pins Terraform `1.6.6`, disables Terraform input
-prompts, and keeps
+`.github/workflows/terraform-validate.yml` runs the validation contract test and
+then the same validation script for pull requests, pushes to `main`, and manual
+workflow dispatches. The workflow has no pull-request path filters, pins
+Terraform `1.6.6`, disables Terraform input prompts, and keeps
 `TERRAFORM_ENABLE_CHECKOV=0` so public CI does not require extra policy-scanner
 installation or credentials.
 
