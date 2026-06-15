@@ -619,6 +619,50 @@ test_missing_absolute_tflint_bin_reports_executable_path() {
   assert_contains "$output" "Install TFLint"
 }
 
+test_missing_absolute_checkov_bin_reports_executable_path() {
+  target="$test_tmp/missing-absolute-checkov"
+  missing_checkov="$test_tmp/missing/bin/checkov"
+  make_target_repo "$target"
+
+  set +e
+  output=$(
+    cd "$target"
+    PATH="$test_tmp/bin:$PATH" \
+      TERRAFORM_ENABLE_CHECKOV=1 \
+      CHECKOV_BIN="$missing_checkov" \
+      "$repo_root/scripts/validate.sh" 2>&1
+  )
+  status=$?
+  set -e
+
+  [ "$status" -eq 127 ] || fail "expected missing absolute CHECKOV_BIN to exit 127"
+  assert_contains "$output" "$missing_checkov not found or not executable."
+  assert_contains "$output" "Install Checkov"
+}
+
+test_non_executable_absolute_checkov_bin_reports_executable_path() {
+  target="$test_tmp/non-executable-absolute-checkov"
+  checkov_bin="$test_tmp/non-executable/bin/checkov"
+  make_target_repo "$target"
+  mkdir -p "$(dirname "$checkov_bin")"
+  touch "$checkov_bin"
+
+  set +e
+  output=$(
+    cd "$target"
+    PATH="$test_tmp/bin:$PATH" \
+      TERRAFORM_ENABLE_CHECKOV=1 \
+      CHECKOV_BIN="$checkov_bin" \
+      "$repo_root/scripts/validate.sh" 2>&1
+  )
+  status=$?
+  set -e
+
+  [ "$status" -eq 127 ] || fail "expected non-executable absolute CHECKOV_BIN to exit 127"
+  assert_contains "$output" "$checkov_bin not found or not executable."
+  assert_contains "$output" "Install Checkov"
+}
+
 make_terraform_stub
 make_checkov_stub
 make_tflint_stub
@@ -638,5 +682,7 @@ test_discovers_checkov_from_home_bin_when_enabled
 test_discovers_tflint_from_home_bin_when_enabled
 test_missing_absolute_terraform_bin_reports_executable_path
 test_missing_absolute_tflint_bin_reports_executable_path
+test_missing_absolute_checkov_bin_reports_executable_path
+test_non_executable_absolute_checkov_bin_reports_executable_path
 
 echo "ok - validate public-safety validation contract"
