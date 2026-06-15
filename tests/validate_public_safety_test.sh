@@ -87,6 +87,54 @@ STUB
   chmod +x "$test_tmp/bin/checkov"
 }
 
+make_home_terraform_stub() {
+  home_dir=$1
+
+  mkdir -p "$home_dir/.local/bin"
+  cat >"$home_dir/.local/bin/terraform" <<'STUB'
+#!/usr/bin/env sh
+set -eu
+
+if [ -n "${TERRAFORM_STUB_LOG:-}" ]; then
+  printf '%s\n' "$*" >>"$TERRAFORM_STUB_LOG"
+fi
+
+case "${1:-}" in
+  -chdir=*)
+    shift
+    ;;
+esac
+
+case "${1:-}" in
+  fmt | init | validate)
+    exit 0
+    ;;
+  *)
+    echo "unexpected terraform command: $*" >&2
+    exit 2
+    ;;
+esac
+STUB
+  chmod +x "$home_dir/.local/bin/terraform"
+}
+
+make_home_checkov_stub() {
+  home_dir=$1
+
+  mkdir -p "$home_dir/bin"
+  cat >"$home_dir/bin/checkov" <<'STUB'
+#!/usr/bin/env sh
+set -eu
+
+if [ -n "${CHECKOV_STUB_LOG:-}" ]; then
+  printf '%s\n' "$*" >>"$CHECKOV_STUB_LOG"
+fi
+
+exit 0
+STUB
+  chmod +x "$home_dir/bin/checkov"
+}
+
 make_target_repo() {
   target=$1
 
@@ -274,6 +322,73 @@ test_checkov_runs_only_when_enabled() {
   assert_contains "$checkov_calls" "-d terraform --quiet"
 }
 
+test_discovers_terraform_from_home_local_bin() {
+  target="$test_tmp/home-local-terraform"
+  home_dir="$test_tmp/home-local"
+  terraform_log="$test_tmp/home-local-terraform.log"
+  make_target_repo "$target"
+  make_home_terraform_stub "$home_dir"
+
+  (
+    cd "$target"
+    PATH="/usr/bin:/bin" \
+      HOME="$home_dir" \
+      TERRAFORM_STUB_LOG="$terraform_log" \
+      "$repo_root/scripts/validate.sh"
+  ) >"$test_tmp/validate-home-local-terraform.out" 2>&1 || {
+    output=$(cat "$test_tmp/validate-home-local-terraform.out")
+    fail "expected Terraform lookup in HOME/.local/bin to pass, got: $output"
+  }
+
+  terraform_calls=$(cat "$terraform_log")
+  assert_contains "$terraform_calls" "fmt -check -recursive terraform"
+  assert_contains "$terraform_calls" "-chdir=terraform/envs/dev init -backend=false -input=false -no-color"
+}
+
+test_discovers_checkov_from_home_bin_when_enabled() {
+  target="$test_tmp/home-bin-checkov"
+  home_dir="$test_tmp/home-bin"
+  checkov_log="$test_tmp/home-bin-checkov.log"
+  make_target_repo "$target"
+  make_home_checkov_stub "$home_dir"
+
+  (
+    cd "$target"
+    PATH="/usr/bin:/bin" \
+      HOME="$home_dir" \
+      TERRAFORM_BIN="$test_tmp/bin/terraform" \
+      TERRAFORM_ENABLE_CHECKOV=1 \
+      CHECKOV_STUB_LOG="$checkov_log" \
+      "$repo_root/scripts/validate.sh"
+  ) >"$test_tmp/validate-home-bin-checkov.out" 2>&1 || {
+    output=$(cat "$test_tmp/validate-home-bin-checkov.out")
+    fail "expected Checkov lookup in HOME/bin to pass, got: $output"
+  }
+
+  checkov_calls=$(cat "$checkov_log")
+  assert_contains "$checkov_calls" "-d terraform --quiet"
+}
+
+test_missing_absolute_terraform_bin_reports_executable_path() {
+  target="$test_tmp/missing-absolute-terraform"
+  missing_terraform="$test_tmp/missing/bin/terraform"
+  make_target_repo "$target"
+
+  set +e
+  output=$(
+    cd "$target"
+    PATH="$test_tmp/bin:$PATH" \
+      TERRAFORM_BIN="$missing_terraform" \
+      "$repo_root/scripts/validate.sh" 2>&1
+  )
+  status=$?
+  set -e
+
+  [ "$status" -eq 127 ] || fail "expected missing absolute TERRAFORM_BIN to exit 127"
+  assert_contains "$output" "$missing_terraform not found or not executable."
+  assert_contains "$output" "Install Terraform CLI >= 1.6.0"
+}
+
 make_terraform_stub
 make_checkov_stub
 
@@ -283,5 +398,8 @@ test_rejects_tracked_forbidden_files
 test_default_matrix_runs_all_environment_roots
 test_custom_matrix_limits_environment_roots
 test_checkov_runs_only_when_enabled
+test_discovers_terraform_from_home_local_bin
+test_discovers_checkov_from_home_bin_when_enabled
+test_missing_absolute_terraform_bin_reports_executable_path
 
 echo "ok - validate public-safety validation contract"
