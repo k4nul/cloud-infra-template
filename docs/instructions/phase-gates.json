@@ -2,16 +2,16 @@
   "schema_version": "1.1.0",
   "project": "devops/cloud-infra-template",
   "current_phase": "template-maintenance",
-  "next_phase": "",
+  "next_phase": "provider-aware-lint-baseline",
   "transition": {
-    "intent": "Keep the public Terraform template in template-maintenance after the optional IaC policy scan lane is documented, remains optional for public-safe validation, and public-safe validation remains green.",
-    "mode": "template-maintenance-no-pending-transition",
+    "intent": "Reopen the public Terraform template for an explicit provider-aware TFLint baseline after the recovered public-safe CI validation contract remains green. The next phase must keep provider-aware lint optional and separate from required backend-disabled validation.",
+    "mode": "template-maintenance-explicit-scope-selected",
     "validation_command": "./scripts/validate.sh",
-    "transition_validation_command": "",
+    "transition_validation_command": "./tests/validate_public_safety_test.sh && terraform fmt -check -recursive terraform",
     "phase_update_files": [
       "docs/instructions/phase-gates.json"
     ],
-    "decision_rule": "Select a new next_phase and transition_validation_command before routing another phase-transition."
+    "decision_rule": "Route a phase-transition after the recovered validation contract test and Terraform formatting checks pass without provider downloads."
   },
   "phase_model": [
     {
@@ -75,6 +75,27 @@
       ],
       "exit_criteria": [
         "new template scope is selected"
+      ]
+    },
+    {
+      "id": "provider-aware-lint-baseline",
+      "purpose": "Add an optional public-safe TFLint provider-aware lint lane without making public CI depend on extra scanners, provider credentials, or backend state.",
+      "allowed_work": [
+        "optional TFLint configuration",
+        "validation script opt-in wiring",
+        "validation contract tests",
+        "lint setup documentation"
+      ],
+      "blocked_work": [
+        "mandatory scanner installation in public CI",
+        "provider credentials",
+        "remote backend initialization",
+        "real environment tfvars"
+      ],
+      "exit_criteria": [
+        "optional TFLint lane is documented",
+        "minimal backend-disabled validation still passes without TFLint",
+        "validation contract tests cover opt-in behavior"
       ]
     }
   ],

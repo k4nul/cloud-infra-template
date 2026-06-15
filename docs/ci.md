@@ -13,9 +13,9 @@ The workflow lives at `.github/workflows/terraform-validate.yml` and runs for:
 - manual `workflow_dispatch` runs.
 
 The workflow has no pull-request path filters. Documentation, GitHub template,
-and configuration-only changes still run the public-safety file check in
-`./scripts/validate.sh`, which prevents accidental commits of local Terraform
-artifacts or operator-owned secrets.
+and configuration-only changes still run the validation contract test and the
+public-safety file check in `./scripts/validate.sh`, which prevents accidental
+commits of local Terraform artifacts or operator-owned secrets.
 
 ## CI Environment
 
@@ -39,15 +39,26 @@ Checkov is disabled in public CI so the required lane has no extra policy
 scanner dependency. Run the optional local policy scan with
 `TERRAFORM_ENABLE_CHECKOV=1 ./scripts/validate.sh` when Checkov is installed.
 
-## Validation Command
+## Validation Commands
 
-CI runs exactly:
+CI first runs the validation contract test:
+
+```bash
+./tests/validate_public_safety_test.sh
+```
+
+That test uses temporary Git repositories and stubbed Terraform and Checkov
+commands to verify the public-safety file gate, the default environment matrix,
+custom `TERRAFORM_ENV_DIRS` behavior, and the optional Checkov opt-in without
+needing provider downloads.
+
+CI then runs the public-safe Terraform validation:
 
 ```bash
 ./scripts/validate.sh
 ```
 
-That script:
+The validation script:
 
 1. rejects tracked Terraform state, plans, real `.tfvars`, private key material,
    generated `.terraform/` directories, lockfiles, and real backend config under
@@ -78,6 +89,6 @@ Before requesting review:
   validation behavior, or environment-root wiring changes.
 
 If CI fails, start with [troubleshooting.md](troubleshooting.md). The most common
-public CI failures are missing formatting, an accidentally tracked local
-Terraform artifact, or a change that updates one environment root without
-keeping the shared root contract aligned.
+public CI failures are a validation contract regression, missing formatting, an
+accidentally tracked local Terraform artifact, or a change that updates one
+environment root without keeping the shared root contract aligned.

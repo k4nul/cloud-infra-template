@@ -15,6 +15,14 @@ fail() {
   exit 1
 }
 
+read_file_or_empty() {
+  file_path=$1
+
+  if [ -f "$file_path" ]; then
+    cat "$file_path"
+  fi
+}
+
 assert_contains() {
   haystack=$1
   needle=$2
@@ -25,11 +33,25 @@ assert_contains() {
   esac
 }
 
+assert_not_contains() {
+  haystack=$1
+  needle=$2
+
+  case "$haystack" in
+    *"$needle"*) fail "expected output not to contain: $needle" ;;
+    *) ;;
+  esac
+}
+
 make_terraform_stub() {
   mkdir -p "$test_tmp/bin"
   cat >"$test_tmp/bin/terraform" <<'STUB'
 #!/usr/bin/env sh
 set -eu
+
+if [ -n "${TERRAFORM_STUB_LOG:-}" ]; then
+  printf '%s\n' "$*" >>"$TERRAFORM_STUB_LOG"
+fi
 
 case "${1:-}" in
   -chdir=*)
@@ -50,6 +72,21 @@ STUB
   chmod +x "$test_tmp/bin/terraform"
 }
 
+make_checkov_stub() {
+  mkdir -p "$test_tmp/bin"
+  cat >"$test_tmp/bin/checkov" <<'STUB'
+#!/usr/bin/env sh
+set -eu
+
+if [ -n "${CHECKOV_STUB_LOG:-}" ]; then
+  printf '%s\n' "$*" >>"$CHECKOV_STUB_LOG"
+fi
+
+exit 0
+STUB
+  chmod +x "$test_tmp/bin/checkov"
+}
+
 make_target_repo() {
   target=$1
 
@@ -67,10 +104,11 @@ make_target_repo() {
 
 run_validation() {
   target=$1
+  terraform_log=${2:-}
 
   (
     cd "$target"
-    PATH="$test_tmp/bin:$PATH" "$repo_root/scripts/validate.sh"
+    PATH="$test_tmp/bin:$PATH" TERRAFORM_STUB_LOG="$terraform_log" "$repo_root/scripts/validate.sh"
   )
 }
 
@@ -157,10 +195,93 @@ test_rejects_tracked_forbidden_files() {
   assert_contains "$output" "config/prod.hcl"
 }
 
+test_default_matrix_runs_all_environment_roots() {
+  target="$test_tmp/default-matrix"
+  make_target_repo "$target"
+  terraform_log="$test_tmp/default-matrix-terraform.log"
+
+  run_validation "$target" "$terraform_log" >"$test_tmp/validate-default-matrix.out" 2>&1 || {
+    output=$(cat "$test_tmp/validate-default-matrix.out")
+    fail "expected default matrix to pass, got: $output"
+  }
+
+  terraform_calls=$(cat "$terraform_log")
+
+  assert_contains "$terraform_calls" "fmt -check -recursive terraform"
+  assert_contains "$terraform_calls" "-chdir=terraform/envs/dev init -backend=false -input=false -no-color"
+  assert_contains "$terraform_calls" "-chdir=terraform/envs/dev validate -no-color"
+  assert_contains "$terraform_calls" "-chdir=terraform/envs/staging init -backend=false -input=false -no-color"
+  assert_contains "$terraform_calls" "-chdir=terraform/envs/staging validate -no-color"
+  assert_contains "$terraform_calls" "-chdir=terraform/envs/prod init -backend=false -input=false -no-color"
+  assert_contains "$terraform_calls" "-chdir=terraform/envs/prod validate -no-color"
+}
+
+test_custom_matrix_limits_environment_roots() {
+  target="$test_tmp/custom-matrix"
+  make_target_repo "$target"
+  terraform_log="$test_tmp/custom-matrix-terraform.log"
+
+  (
+    cd "$target"
+    PATH="$test_tmp/bin:$PATH" \
+      TERRAFORM_ENV_DIRS="terraform/envs/staging" \
+      TERRAFORM_STUB_LOG="$terraform_log" \
+      "$repo_root/scripts/validate.sh"
+  ) >"$test_tmp/validate-custom-matrix.out" 2>&1 || {
+    output=$(cat "$test_tmp/validate-custom-matrix.out")
+    fail "expected custom matrix to pass, got: $output"
+  }
+
+  terraform_calls=$(cat "$terraform_log")
+
+  assert_contains "$terraform_calls" "fmt -check -recursive terraform"
+  assert_contains "$terraform_calls" "-chdir=terraform/envs/staging init -backend=false -input=false -no-color"
+  assert_contains "$terraform_calls" "-chdir=terraform/envs/staging validate -no-color"
+  assert_not_contains "$terraform_calls" "-chdir=terraform/envs/dev"
+  assert_not_contains "$terraform_calls" "-chdir=terraform/envs/prod"
+}
+
+test_checkov_runs_only_when_enabled() {
+  target="$test_tmp/checkov-opt-in"
+  make_target_repo "$target"
+  checkov_log="$test_tmp/checkov.log"
+
+  (
+    cd "$target"
+    PATH="$test_tmp/bin:$PATH" \
+      CHECKOV_STUB_LOG="$checkov_log" \
+      "$repo_root/scripts/validate.sh"
+  ) >"$test_tmp/validate-checkov-default.out" 2>&1 || {
+    output=$(cat "$test_tmp/validate-checkov-default.out")
+    fail "expected default Checkov-disabled validation to pass, got: $output"
+  }
+
+  checkov_calls=$(read_file_or_empty "$checkov_log")
+  [ -z "$checkov_calls" ] || fail "expected Checkov to be skipped by default"
+
+  (
+    cd "$target"
+    PATH="$test_tmp/bin:$PATH" \
+      TERRAFORM_ENABLE_CHECKOV=1 \
+      CHECKOV_STUB_LOG="$checkov_log" \
+      "$repo_root/scripts/validate.sh"
+  ) >"$test_tmp/validate-checkov-enabled.out" 2>&1 || {
+    output=$(cat "$test_tmp/validate-checkov-enabled.out")
+    fail "expected Checkov-enabled validation to pass, got: $output"
+  }
+
+  checkov_calls=$(cat "$checkov_log")
+  assert_contains "$checkov_calls" "-d terraform --quiet"
+}
+
 make_terraform_stub
+make_checkov_stub
 
 test_allows_public_examples
 test_ignores_untracked_forbidden_files
 test_rejects_tracked_forbidden_files
+test_default_matrix_runs_all_environment_roots
+test_custom_matrix_limits_environment_roots
+test_checkov_runs_only_when_enabled
 
-echo "ok - validate public-safety tracked-file gate"
+echo "ok - validate public-safety validation contract"
