@@ -6,11 +6,21 @@ export TF_IN_AUTOMATION="${TF_IN_AUTOMATION:-1}"
 export TF_INPUT="${TF_INPUT:-0}"
 
 TERRAFORM_ENV_DIRS="${TERRAFORM_ENV_DIRS:-terraform/envs/dev terraform/envs/staging terraform/envs/prod}"
+TERRAFORM_VALIDATE_MODE="${TERRAFORM_VALIDATE_MODE:-full}"
 TERRAFORM_ENABLE_CHECKOV="${TERRAFORM_ENABLE_CHECKOV:-0}"
 TERRAFORM_ENABLE_TFLINT="${TERRAFORM_ENABLE_TFLINT:-0}"
 TERRAFORM_BIN="${TERRAFORM_BIN:-terraform}"
 CHECKOV_BIN="${CHECKOV_BIN:-checkov}"
 TFLINT_BIN="${TFLINT_BIN:-tflint}"
+
+case "$TERRAFORM_VALIDATE_MODE" in
+  full | static)
+    ;;
+  *)
+    echo "Unsupported TERRAFORM_VALIDATE_MODE: $TERRAFORM_VALIDATE_MODE. Use full or static." >&2
+    exit 1
+    ;;
+esac
 
 ensure_command_available() {
   command_name=$1
@@ -71,8 +81,8 @@ check_public_safe_files() {
         config/backend.hcl.example | *.tfvars.example | .env.example | */.env.example)
           ;;
         .terraform/* | */.terraform/* | .terraform.lock.hcl | */.terraform.lock.hcl | \
-          .terraformrc | */.terraformrc | terraform.rc | */terraform.rc | \
-          .terraform.d/* | */.terraform.d/* | \
+        .terraformrc | */.terraformrc | terraform.rc | */terraform.rc | \
+          .terraform.d/* | */.terraform.d/* | .tflint.d/* | */.tflint.d/* | \
           *.tfvars | *.tfvars.json | *.tfstate | *.tfstate.* | *.tfplan | \
           *.tfplan.json | *.plan | *.plan.json | plan*.out | */plan*.out | \
           plan*.json | */plan*.json | \
@@ -125,6 +135,11 @@ run_optional_tflint_scan() {
   ensure_command_available "$TFLINT_BIN" \
     "Install TFLint, run tflint --init if using plugins, add it to PATH, or set TFLINT_BIN before running with TERRAFORM_ENABLE_TFLINT=1."
 
+  if [ -f ".tflint.hcl" ]; then
+    "$TFLINT_BIN" --config="$(pwd)/.tflint.hcl" --recursive --chdir=terraform
+    return 0
+  fi
+
   "$TFLINT_BIN" --recursive --chdir=terraform
 }
 
@@ -132,6 +147,8 @@ check_public_safe_files
 ensure_command_available "$TERRAFORM_BIN" \
   "Install Terraform CLI >= 1.6.0, add it to PATH, or set TERRAFORM_BIN."
 "$TERRAFORM_BIN" fmt -check -recursive terraform
-validate_environment_roots
+if [ "$TERRAFORM_VALIDATE_MODE" != "static" ]; then
+  validate_environment_roots
+fi
 run_optional_tflint_scan
 run_optional_policy_scan

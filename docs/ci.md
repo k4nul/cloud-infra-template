@@ -65,8 +65,8 @@ The validation script:
 
 1. rejects tracked Terraform state, plans, real `.tfvars`, crash logs, local env
    or Terraform CLI credential files, private key material, generated
-   `.terraform/` directories, lockfiles, and real backend config under
-   `config/*.hcl`,
+   `.terraform/` directories, `.tflint.d/` plugin cache directories, lockfiles,
+   and real backend config under `config/*.hcl`,
 2. runs `terraform fmt -check -recursive terraform`,
 3. initializes each selected environment root with `terraform init
    -backend=false -input=false -no-color`,
@@ -79,6 +79,11 @@ The default environment matrix is:
 ```text
 terraform/envs/dev terraform/envs/staging terraform/envs/prod
 ```
+
+Phase gates or restricted local environments can run
+`TERRAFORM_VALIDATE_MODE=static ./scripts/validate.sh` to exercise the
+public-safety and formatting contract without provider registry downloads.
+Public CI intentionally runs the default full mode.
 
 ## Pull-Request Expectations
 

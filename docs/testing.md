@@ -24,6 +24,13 @@ To test the validation script contract without downloading providers:
 ./tests/validate_public_safety_test.sh
 ```
 
+To run the public-safety and formatting lane without Terraform provider
+registry downloads:
+
+```bash
+TERRAFORM_VALIDATE_MODE=static ./scripts/validate.sh
+```
+
 `./scripts/validate.sh` uses `TERRAFORM_BIN` when set and otherwise runs
 `terraform`. If the command is not already on `PATH`, the script also checks
 `$HOME/.local/bin`, `$HOME/bin`, and `/usr/local/bin` before reporting a missing
@@ -32,7 +39,10 @@ shells that install Terraform under a user-local directory.
 
 Run the full validation script after Terraform, example, module, input, or
 output changes. The standalone formatting command is useful when you want to
-check formatting before running the full environment matrix.
+check formatting before running the full environment matrix. Static mode is for
+phase gates and restricted environments where the public-safety and formatting
+contract must run without provider downloads; it does not replace full
+`terraform init -backend=false` and `terraform validate` coverage.
 
 ## What `./scripts/validate.sh` Checks
 
@@ -42,11 +52,13 @@ The script performs these checks in order:
    `.tfvars`, lockfile, crash log, local env or Terraform CLI credential,
    private key, or real backend files under `config/*.hcl`.
 2. Runs `terraform fmt -check -recursive terraform`.
-3. Runs `terraform init -backend=false -input=false -no-color` for each selected
+3. Unless `TERRAFORM_VALIDATE_MODE=static` is set, runs
+   `terraform init -backend=false -input=false -no-color` for each selected
    environment root.
-4. Runs `terraform validate -no-color` for each selected environment root.
-5. Runs `tflint --recursive --chdir=terraform` only when
-   `TERRAFORM_ENABLE_TFLINT=1` is set.
+4. Unless `TERRAFORM_VALIDATE_MODE=static` is set, runs
+   `terraform validate -no-color` for each selected environment root.
+5. Runs recursive TFLint against `terraform/`, using the root `.tflint.hcl`
+   config when present, only when `TERRAFORM_ENABLE_TFLINT=1` is set.
 6. Runs `checkov -d terraform --quiet` only when
    `TERRAFORM_ENABLE_CHECKOV=1` is set.
 
@@ -92,9 +104,12 @@ TERRAFORM_ENABLE_TFLINT=1 ./scripts/validate.sh
 ```
 
 If TFLint is requested but not installed, the script exits with status `127`.
-Set `TFLINT_BIN` when TFLint is installed outside `PATH`. A missing TFLint
-binary or uninitialized plugin cache is an environment tooling blocker, not a
-Terraform contract failure.
+Set `TFLINT_BIN` when TFLint is installed outside `PATH`. When `.tflint.hcl` is
+present at the repository root, the validation script passes it to TFLint with an
+absolute `--config` path so recursive scans use the checked-in provider-aware
+ruleset configuration. A missing TFLint binary or uninitialized plugin cache is
+an environment tooling blocker, not a Terraform contract failure. Keep the
+`.tflint.d/` plugin cache untracked.
 
 Checkov is optional and local by default:
 
@@ -112,6 +127,7 @@ The validation script rejects these tracked file classes:
 
 - `.terraform/` directories.
 - `.terraform.lock.hcl` files.
+- `.tflint.d/` plugin cache directories.
 - Terraform state files.
 - Terraform plan files.
 - Real `.tfvars` or `.tfvars.json` files.

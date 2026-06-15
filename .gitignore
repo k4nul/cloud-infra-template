@@ -16,6 +16,7 @@ crash.*.log
 .terraformrc
 terraform.rc
 .terraform.d/
+.tflint.d/
 config/*.hcl
 !config/backend.hcl.example
 out/

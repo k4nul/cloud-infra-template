@@ -236,6 +236,7 @@ test_rejects_tracked_forbidden_files() {
 
   mkdir -p "$target/terraform/envs/dev/.terraform/providers" \
     "$target/.terraform.d" \
+    "$target/.tflint.d/plugins" \
     "$target/nested"
   touch "$target/.env"
   touch "$target/.env.local"
@@ -243,6 +244,7 @@ test_rejects_tracked_forbidden_files() {
   touch "$target/.terraformrc"
   touch "$target/terraform.rc"
   touch "$target/.terraform.d/credentials.tfrc.json"
+  touch "$target/.tflint.d/plugins/cache.txt"
   touch "$target/.terraform.lock.hcl"
   touch "$target/terraform/envs/dev/.terraform/providers/cache.txt"
   touch "$target/terraform/envs/dev/terraform.tfvars"
@@ -290,6 +292,7 @@ test_rejects_tracked_forbidden_files() {
   assert_contains "$output" ".terraformrc"
   assert_contains "$output" "terraform.rc"
   assert_contains "$output" ".terraform.d/credentials.tfrc.json"
+  assert_contains "$output" ".tflint.d/plugins/cache.txt"
   assert_contains "$output" ".terraform.lock.hcl"
   assert_contains "$output" "terraform/envs/dev/.terraform/providers/cache.txt"
   assert_contains "$output" "terraform/envs/dev/terraform.tfvars"
@@ -365,6 +368,31 @@ test_custom_matrix_limits_environment_roots() {
   assert_not_contains "$terraform_calls" "-chdir=terraform/envs/prod"
 }
 
+test_static_mode_skips_environment_init_validate() {
+  target="$test_tmp/static-mode"
+  make_target_repo "$target"
+  terraform_log="$test_tmp/static-mode-terraform.log"
+
+  (
+    cd "$target"
+    PATH="$test_tmp/bin:$PATH" \
+      TERRAFORM_VALIDATE_MODE=static \
+      TERRAFORM_STUB_LOG="$terraform_log" \
+      "$repo_root/scripts/validate.sh"
+  ) >"$test_tmp/validate-static-mode.out" 2>&1 || {
+    output=$(cat "$test_tmp/validate-static-mode.out")
+    fail "expected static mode validation to pass, got: $output"
+  }
+
+  terraform_calls=$(cat "$terraform_log")
+
+  assert_contains "$terraform_calls" "fmt -check -recursive terraform"
+  assert_not_contains "$terraform_calls" "-chdir=terraform/envs/dev init"
+  assert_not_contains "$terraform_calls" "-chdir=terraform/envs/dev validate"
+  assert_not_contains "$terraform_calls" "-chdir=terraform/envs/staging init"
+  assert_not_contains "$terraform_calls" "-chdir=terraform/envs/prod init"
+}
+
 test_checkov_runs_only_when_enabled() {
   target="$test_tmp/checkov-opt-in"
   make_target_repo "$target"
@@ -431,6 +459,30 @@ test_tflint_runs_only_when_enabled() {
   assert_contains "$tflint_calls" "--recursive --chdir=terraform"
 }
 
+test_tflint_uses_root_config_when_present() {
+  target="$test_tmp/tflint-root-config"
+  make_target_repo "$target"
+  tflint_log="$test_tmp/tflint-root-config.log"
+
+  touch "$target/.tflint.hcl"
+
+  (
+    cd "$target"
+    PATH="$test_tmp/bin:$PATH" \
+      TERRAFORM_VALIDATE_MODE=static \
+      TERRAFORM_ENABLE_TFLINT=1 \
+      TFLINT_STUB_LOG="$tflint_log" \
+      "$repo_root/scripts/validate.sh"
+  ) >"$test_tmp/validate-tflint-root-config.out" 2>&1 || {
+    output=$(cat "$test_tmp/validate-tflint-root-config.out")
+    fail "expected TFLint-enabled validation with root config to pass, got: $output"
+  }
+
+  tflint_calls=$(cat "$tflint_log")
+  assert_contains "$tflint_calls" "--config=$target/.tflint.hcl"
+  assert_contains "$tflint_calls" "--recursive --chdir=terraform"
+}
+
 test_discovers_terraform_from_home_local_bin() {
   target="$test_tmp/home-local-terraform"
   home_dir="$test_tmp/home-local"
@@ -452,6 +504,30 @@ test_discovers_terraform_from_home_local_bin() {
   terraform_calls=$(cat "$terraform_log")
   assert_contains "$terraform_calls" "fmt -check -recursive terraform"
   assert_contains "$terraform_calls" "-chdir=terraform/envs/dev init -backend=false -input=false -no-color"
+}
+
+test_static_mode_discovers_terraform_from_home_local_bin() {
+  target="$test_tmp/static-home-local-terraform"
+  home_dir="$test_tmp/static-home-local"
+  terraform_log="$test_tmp/static-home-local-terraform.log"
+  make_target_repo "$target"
+  make_home_terraform_stub "$home_dir"
+
+  (
+    cd "$target"
+    PATH="/usr/bin:/bin" \
+      HOME="$home_dir" \
+      TERRAFORM_VALIDATE_MODE=static \
+      TERRAFORM_STUB_LOG="$terraform_log" \
+      "$repo_root/scripts/validate.sh"
+  ) >"$test_tmp/validate-static-home-local-terraform.out" 2>&1 || {
+    output=$(cat "$test_tmp/validate-static-home-local-terraform.out")
+    fail "expected static mode Terraform lookup in HOME/.local/bin to pass, got: $output"
+  }
+
+  terraform_calls=$(cat "$terraform_log")
+  assert_contains "$terraform_calls" "fmt -check -recursive terraform"
+  assert_not_contains "$terraform_calls" "-chdir=terraform/envs/dev init"
 }
 
 test_discovers_checkov_from_home_bin_when_enabled() {
@@ -552,9 +628,12 @@ test_ignores_untracked_forbidden_files
 test_rejects_tracked_forbidden_files
 test_default_matrix_runs_all_environment_roots
 test_custom_matrix_limits_environment_roots
+test_static_mode_skips_environment_init_validate
 test_checkov_runs_only_when_enabled
 test_tflint_runs_only_when_enabled
+test_tflint_uses_root_config_when_present
 test_discovers_terraform_from_home_local_bin
+test_static_mode_discovers_terraform_from_home_local_bin
 test_discovers_checkov_from_home_bin_when_enabled
 test_discovers_tflint_from_home_bin_when_enabled
 test_missing_absolute_terraform_bin_reports_executable_path

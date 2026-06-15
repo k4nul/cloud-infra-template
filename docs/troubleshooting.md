@@ -22,6 +22,14 @@ run with an explicit binary path:
 TERRAFORM_BIN=/path/to/terraform ./scripts/validate.sh
 ```
 
+Phase gates and restricted environments can use the validation script's static
+mode so Terraform discovery uses the same lookup path while avoiding provider
+registry downloads:
+
+```bash
+TERRAFORM_VALIDATE_MODE=static ./scripts/validate.sh
+```
+
 CI currently uses Terraform `1.6.6`, so matching that version locally is the
 closest parity check.
 
@@ -37,8 +45,8 @@ Common fixes:
 - Move real remote state settings under `config/*.hcl` to an untracked local
   file, such as `config/backend.hcl`.
 - Keep only `config/backend.hcl.example` committed.
-- Remove `.terraform/`, state, plan, lockfile, crash log, local env or Terraform
-  CLI credential files, and key material from the index.
+- Remove `.terraform/`, `.tflint.d/`, state, plan, lockfile, crash log, local
+  env or Terraform CLI credential files, and key material from the index.
 
 The `.gitignore` already ignores these local operator files. If one appears in
 validation output, it was force-added or committed before the ignore rule was in
@@ -71,6 +79,20 @@ running through `./scripts/validate.sh` or that manual Terraform commands includ
 not declare a backend block; remote state wiring belongs in consumer-owned
 environment configuration or a downstream fork.
 
+## Provider Registry Access Failed
+
+`./scripts/validate.sh` still runs `terraform init -backend=false` in full mode,
+so Terraform may contact `registry.terraform.io` to resolve the AWS provider.
+If the environment blocks DNS or network access, run the static lane for
+public-safety and formatting checks:
+
+```bash
+TERRAFORM_VALIDATE_MODE=static ./scripts/validate.sh
+```
+
+Static mode is not a full replacement for provider validation. Rerun
+`./scripts/validate.sh` when provider registry access is available.
+
 ## Invalid Or Unsafe Ingress CIDRs
 
 `terraform/modules/deployment` validates that every `ingress_cidrs` entry is an
@@ -98,7 +120,9 @@ TERRAFORM_ENABLE_TFLINT=1 ./scripts/validate.sh
 If the command reports that `tflint` was not found, install TFLint, set
 `TFLINT_BIN=/path/to/tflint`, or rerun the standard public CI lane without that
 environment variable. If the configured AWS ruleset plugin is missing, run
-`tflint --init` from the repository root and rerun validation.
+`tflint --init` from the repository root and rerun validation. The validation
+script passes the repository root `.tflint.hcl` as an explicit config file when
+it exists. Keep the generated `.tflint.d/` plugin cache untracked.
 
 ## Optional Checkov Failure
 

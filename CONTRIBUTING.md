@@ -14,18 +14,20 @@ network, IAM, account, or backend assumptions.
 `terraform validate` for the checked-in environment roots. It also checks the
 tracked file list for public-safety violations such as state, plans, real
 `.tfvars`, local env or Terraform CLI credential files, crash logs, private
-keys, and backend config under `config/*.hcl` beyond
+keys, TFLint plugin cache directories, and backend config under `config/*.hcl` beyond
 `config/backend.hcl.example`.
-Keep `TERRAFORM_ENABLE_CHECKOV=1` as an optional local policy scan so public CI
-continues to run without repository secrets or extra credentials.
+Keep `TERRAFORM_ENABLE_TFLINT=1` and `TERRAFORM_ENABLE_CHECKOV=1` as optional
+local scans so public CI continues to run without repository secrets, provider
+lint plugins, or extra credentials.
 See [docs/testing.md](docs/testing.md) for CI parity details and
 [docs/troubleshooting.md](docs/troubleshooting.md) for common validation
 failures.
 
 ## Pull Request Checklist
 
-- Do not commit `.terraform/`, state files, real `.tfvars`, plans, crash logs,
-  local env or Terraform CLI credential files, keys, or backend config.
+- Do not commit `.terraform/`, `.tflint.d/`, state files, real `.tfvars`,
+  plans, crash logs, local env or Terraform CLI credential files, keys, or
+  backend config.
 - Do not narrow pull-request CI path filters in a way that lets public-safety checks be skipped.
 - Keep real account IDs, domains, regions, and role names out of examples.
 - Keep example ingress closed by default unless the change intentionally documents a safe CIDR and the `allow_public_ingress` opt-in.
