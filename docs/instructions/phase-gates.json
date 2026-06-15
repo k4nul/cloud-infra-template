@@ -1,17 +1,17 @@
 {
   "schema_version": "1.1.0",
   "project": "devops/cloud-infra-template",
-  "current_phase": "provider-aware-lint-baseline",
-  "next_phase": "template-maintenance",
+  "current_phase": "template-maintenance",
+  "next_phase": "",
   "transition": {
-    "intent": "Return the public Terraform template to template-maintenance after the optional provider-aware TFLint baseline is documented, remains opt-in, and static validation proves the public-safe lane without provider downloads.",
-    "mode": "provider-aware-lint-baseline-completion",
+    "intent": "Keep the public Terraform template in template-maintenance after the optional provider-aware TFLint baseline is documented, remains opt-in, and static validation proves the public-safe lane without provider downloads.",
+    "mode": "template-maintenance-no-pending-transition",
     "validation_command": "./scripts/validate.sh",
-    "transition_validation_command": "./tests/validate_public_safety_test.sh && TERRAFORM_VALIDATE_MODE=static ./scripts/validate.sh",
+    "transition_validation_command": "",
     "phase_update_files": [
       "docs/instructions/phase-gates.json"
     ],
-    "decision_rule": "Route a phase-transition after the validation contract test and static validation pass without provider downloads, TFLint credentials, or backend state."
+    "decision_rule": "Select a new next_phase and transition_validation_command before routing another phase-transition."
   },
   "phase_model": [
     {
