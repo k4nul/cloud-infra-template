@@ -97,7 +97,10 @@ Before requesting review:
   Terraform CLI credential files, provider lockfiles, generated Terraform
   directories, keys, and account-specific values untracked,
 - update `docs/infra-contract.md` when module inputs, outputs, examples,
-  validation behavior, or environment-root wiring changes.
+  validation behavior, or environment-root wiring changes,
+- wire new or temporarily unreferenced modules into an environment root or an
+  explicit `TERRAFORM_ENV_DIRS` validation path before relying on the default
+  environment matrix.
 
 If CI fails, start with [troubleshooting.md](troubleshooting.md). The most common
 public CI failures are a validation contract regression, missing formatting, an

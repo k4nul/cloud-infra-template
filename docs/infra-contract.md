@@ -9,7 +9,7 @@
 - State: keep public validation backend-disabled. Consumers that adopt remote state should declare backend blocks in consumer-owned environment configuration and keep backend arguments in untracked config, not committed secrets or local state files.
 - Validation: pull-request CI and `./scripts/validate.sh` must use `terraform init -backend=false` so public checks do not need backend credentials
 - Optional lint: provider-aware TFLint checks are local opt-in through `TERRAFORM_ENABLE_TFLINT=1`; public CI and standard validation must not require TFLint, plugin downloads, credentials, or backend state. When the root `.tflint.hcl` file is present, validation passes it to TFLint with an absolute `--config` path. The generated `.tflint.d/` plugin cache remains untracked.
-- Public safety: pull-request CI runs without path filters and the validation script rejects tracked state, plans, real `.tfvars`, private key material, generated Terraform directories, TFLint plugin cache directories, lockfiles, and real backend config under `config/*.hcl` other than `config/backend.hcl.example`
+- Public safety: pull-request CI runs without path filters and the validation script rejects tracked state, plans, real `.tfvars`, private key material, generated Terraform directories, TFLint plugin cache directories, lockfiles, crash logs, local env or Terraform CLI credential files, and real backend config under `config/*.hcl` other than `config/backend.hcl.example`
 
 ## Runtime And Provider Contract
 
@@ -75,6 +75,7 @@ The reusable modules expose only their owned resources:
 
 - Keep Terraform and AWS provider constraint changes synchronized across `terraform/envs/dev`, `terraform/envs/staging`, and `terraform/envs/prod`.
 - After any provider, module, input, output, or example change, run `terraform fmt -check -recursive terraform` and `./scripts/validate.sh`.
+- The default validation matrix validates modules through `dev`, `staging`, and `prod`. New or temporarily unreferenced modules need environment-root wiring or an explicit `TERRAFORM_ENV_DIRS` root module path before they are covered by full Terraform validation.
 - Use `TERRAFORM_VALIDATE_MODE=static ./scripts/validate.sh` only for the no-provider public-safety and formatting lane used by phase gates or restricted environments; it intentionally skips environment root `init` and `validate`.
 - Run `TERRAFORM_ENABLE_TFLINT=1 ./scripts/validate.sh` only when TFLint is installed and `tflint --init` has prepared the configured AWS ruleset plugin; public CI keeps this provider-aware lint lane optional.
 - Run `TERRAFORM_ENABLE_CHECKOV=1 ./scripts/validate.sh` only when Checkov is installed locally; public CI keeps this policy scan optional.

@@ -44,6 +44,12 @@ phase gates and restricted environments where the public-safety and formatting
 contract must run without provider downloads; it does not replace full
 `terraform init -backend=false` and `terraform validate` coverage.
 
+The default validation matrix covers modules through the checked-in environment
+roots that instantiate them. If a change adds a new module or leaves a module
+temporarily unreferenced by `dev`, `staging`, or `prod`, wire that module into an
+environment root or add an explicit root module path to `TERRAFORM_ENV_DIRS`
+before treating `./scripts/validate.sh` as full Terraform validation for it.
+
 ## What `./scripts/validate.sh` Checks
 
 The script performs these checks in order:
@@ -138,5 +144,5 @@ The validation script rejects these tracked file classes:
   `.keystore`, `id_rsa`, `id_dsa`, `id_ecdsa`, or `id_ed25519` files.
 - Real backend config under `config/*.hcl`.
 
-The allowed public examples are `terraform.tfvars.example` files,
-`.env.example`, and `config/backend.hcl.example`.
+The allowed public examples are files that end in `.tfvars.example`, root or
+nested `.env.example` files, and `config/backend.hcl.example`.

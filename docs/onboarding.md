@@ -26,6 +26,8 @@ environment-specific values in the `dev`, `staging`, and `prod` root modules.
 - `docs/ci.md`: pull-request CI triggers, environment, and review expectations.
 - `docs/testing.md`: local and CI validation guidance.
 - `docs/troubleshooting.md`: common validation failures and fixes.
+- `docs/instructions/phase-gates.json`: maintainer phase metadata, allowed
+  maintenance work, and validation gates.
 
 ## First Local Check
 
@@ -100,6 +102,8 @@ For template changes:
 2. Keep `dev`, `staging`, and `prod` input and output contracts aligned unless a
    deliberate environment difference is documented.
 3. Update `docs/infra-contract.md` when module inputs, outputs, examples, or
-   validation expectations change.
+   validation expectations change. New or temporarily unreferenced modules are
+   not covered by the default environment-root matrix until they are wired into
+   an environment root or added to an explicit `TERRAFORM_ENV_DIRS` check.
 4. Review [ci.md](ci.md), then run `terraform fmt -check -recursive terraform`
    and `./scripts/validate.sh` before opening a pull request.

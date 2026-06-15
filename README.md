@@ -29,9 +29,11 @@ infrastructure details.
 - [docs/ci.md](docs/ci.md): pull-request CI triggers, environment, and review
   expectations.
 - [docs/testing.md](docs/testing.md): local validation, CI parity, optional
-  Checkov, and public-safety file checks.
+  TFLint and Checkov scans, and public-safety file checks.
 - [docs/troubleshooting.md](docs/troubleshooting.md): common validation failures
   and remediation steps.
+- [docs/instructions/phase-gates.json](docs/instructions/phase-gates.json):
+  maintainer phase metadata, allowed maintenance work, and validation gates.
 
 ## Validate Locally
 
