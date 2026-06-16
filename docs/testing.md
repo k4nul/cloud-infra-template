@@ -45,10 +45,13 @@ contract must run without provider downloads; it does not replace full
 `terraform init -backend=false` and `terraform validate` coverage.
 
 The default validation matrix covers modules through the checked-in environment
-roots that instantiate them. If a change adds a new module or leaves a module
-temporarily unreferenced by `dev`, `staging`, or `prod`, wire that module into an
-environment root or add an explicit root module path to `TERRAFORM_ENV_DIRS`
-before treating `./scripts/validate.sh` as full Terraform validation for it.
+roots that instantiate the shared `terraform/modules/environment` composition
+module. That composition module then wires the lower-level `network`, `iam`, and
+`deployment` modules. If a change adds a new lower-level module or leaves a
+module temporarily unreferenced by `dev`, `staging`, or `prod`, wire that module
+into the environment composition module or add an explicit root module path to
+`TERRAFORM_ENV_DIRS` before treating `./scripts/validate.sh` as full Terraform
+validation for it.
 
 ## What `./scripts/validate.sh` Checks
 

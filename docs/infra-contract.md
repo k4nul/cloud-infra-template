@@ -5,7 +5,8 @@
 - Network module: creates the VPC, public subnets with public IP assignment on launch, internet gateway, and public route table baseline
 - IAM module: creates a deployment role with parameterized trust and managed policies
 - Deployment module: creates a workload security group for downstream compute or cluster modules; inbound TCP/80 stays closed until callers provide allowed CIDRs, wildcard ingress requires an explicit opt-in, and egress allows outbound traffic to `0.0.0.0/0`
-- Environment roots: keep environment-specific CIDR, region, names, and tags outside reusable modules
+- Environment composition module: wires the network, IAM, and deployment modules with the shared name/tag convention and workload ingress controls
+- Environment roots: keep provider configuration, environment-specific defaults, CIDR, region, names, and tags outside lower-level reusable modules
 - State: keep public validation backend-disabled. Consumers that adopt remote state should declare backend blocks in consumer-owned environment configuration and keep backend arguments in untracked config, not committed secrets or local state files.
 - Validation: pull-request CI and `./scripts/validate.sh` must use `terraform init -backend=false` so public checks do not need backend credentials
 - Optional lint: provider-aware TFLint checks are local opt-in through `TERRAFORM_ENABLE_TFLINT=1`; public CI and standard validation must not require TFLint, plugin downloads, credentials, or backend state. When the root `.tflint.hcl` file is present, validation passes it to TFLint with an absolute `--config` path. The generated `.tflint.d/` plugin cache remains untracked.
@@ -15,7 +16,7 @@
 
 - Terraform CLI: environment roots currently require Terraform `>= 1.6.0`; pull-request CI pins `hashicorp/setup-terraform` to Terraform `1.6.6`.
 - Provider dependency: each environment root requires `hashicorp/aws` with version constraint `~> 5.0`.
-- Module sources: environment roots consume only the checked-in `network`, `iam`, and `deployment` modules through relative paths.
+- Module sources: environment roots consume the checked-in `environment` composition module through relative paths; that module consumes the checked-in `network`, `iam`, and `deployment` modules through relative paths.
 - Lockfiles: `.terraform.lock.hcl` files are not tracked by this template. A provider upgrade package should either keep that public-template policy explicit or intentionally add root lockfiles for every environment in the same change.
 
 ## Reader Workflow
@@ -42,8 +43,9 @@ map, ingress defaults, and tags. They rely on environment-root defaults for
 `trusted_services = ["ec2.amazonaws.com"]` and `managed_policy_arns = []` until a
 consumer provides operator-owned IAM values in an untracked variable file.
 
-Reusable modules keep a narrower input surface:
+Reusable modules keep narrower input surfaces:
 
+- `environment`: `project_name`, `environment`, `vpc_cidr`, `public_subnets`, `trusted_services`, `managed_policy_arns`, `ingress_cidrs`, `allow_public_ingress`, and `tags`.
 - `network`: `name_prefix`, `vpc_cidr`, `public_subnets`, and `tags`.
 - `iam`: `name_prefix`, `trusted_services`, `managed_policy_arns`, and `tags`.
 - `deployment`: `name_prefix`, `vpc_id`, `ingress_cidrs`, `allow_public_ingress`, and `tags`.
@@ -57,7 +59,14 @@ The environment roots expose these outputs for downstream stacks or examples:
 - `deployment_role_arn`
 - `workload_security_group_id`
 
-The reusable modules expose only their owned resources:
+The environment composition module preserves the root output contract by exposing:
+
+- `vpc_id`
+- `public_subnet_ids`
+- `deployment_role_arn`
+- `workload_security_group_id`
+
+The lower-level reusable modules expose only their owned resources:
 
 - `network`: `vpc_id` and `public_subnet_ids`
 - `iam`: `deployment_role_arn` and `deployment_role_name`
@@ -75,7 +84,7 @@ The reusable modules expose only their owned resources:
 
 - Keep Terraform and AWS provider constraint changes synchronized across `terraform/envs/dev`, `terraform/envs/staging`, and `terraform/envs/prod`.
 - After any provider, module, input, output, or example change, run `terraform fmt -check -recursive terraform` and `./scripts/validate.sh`.
-- The default validation matrix validates modules through `dev`, `staging`, and `prod`. New or temporarily unreferenced modules need environment-root wiring or an explicit `TERRAFORM_ENV_DIRS` root module path before they are covered by full Terraform validation.
+- The default validation matrix validates modules through `dev`, `staging`, and `prod`. New or temporarily unreferenced lower-level modules need composition-module wiring or an explicit root module path in `TERRAFORM_ENV_DIRS` before they are covered by full Terraform validation.
 - Use `TERRAFORM_VALIDATE_MODE=static ./scripts/validate.sh` only for the no-provider public-safety and formatting lane used by phase gates or restricted environments; it intentionally skips environment root `init` and `validate`.
 - Run `TERRAFORM_ENABLE_TFLINT=1 ./scripts/validate.sh` only when TFLint is installed and `tflint --init` has prepared the configured AWS ruleset plugin; public CI keeps this provider-aware lint lane optional.
 - Run `TERRAFORM_ENABLE_CHECKOV=1 ./scripts/validate.sh` only when Checkov is installed locally; public CI keeps this policy scan optional.

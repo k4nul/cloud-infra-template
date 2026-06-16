@@ -16,6 +16,7 @@ infrastructure details.
 - `terraform/envs/dev`: development environment root module
 - `terraform/envs/staging`: staging environment root module
 - `terraform/envs/prod`: production environment root module
+- `terraform/modules/environment`: shared environment composition module
 - `terraform/modules/network`: VPC and subnet baseline
 - `terraform/modules/iam`: deployment role baseline
 - `terraform/modules/deployment`: workload security group baseline
