@@ -92,6 +92,8 @@ check_public_safe_files() {
         .terraform/* | */.terraform/* | .terraform.lock.hcl | */.terraform.lock.hcl | \
         .terraformrc | */.terraformrc | terraform.rc | */terraform.rc | \
           .terraform.d/* | */.terraform.d/* | .tflint.d/* | */.tflint.d/* | \
+          .aws/* | */.aws/* | .azure/* | */.azure/* | \
+          .config/gcloud/* | */.config/gcloud/* | \
           *.tfvars | *.tfvars.json | *.tfstate | *.tfstate.* | *.tfplan | \
           *.tfplan.json | *.plan | *.plan.json | plan*.out | */plan*.out | \
           plan*.json | */plan*.json | \
@@ -107,7 +109,7 @@ check_public_safe_files() {
   )
 
   if [ -n "$violations" ]; then
-    echo "Public-safety validation failed. Remove tracked generated, secret, state, plan, local credential, or real backend files:" >&2
+    echo "Public-safety validation failed. Remove tracked generated, secret, state, plan, local or cloud credential, or real backend files:" >&2
     printf '%s\n' "$violations" | sed 's/^/  - /' >&2
     return 1
   fi

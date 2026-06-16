@@ -17,6 +17,9 @@ crash.*.log
 terraform.rc
 .terraform.d/
 .tflint.d/
+.aws/
+.azure/
+.config/gcloud/
 config/*.hcl
 !config/backend.hcl.example
 out/

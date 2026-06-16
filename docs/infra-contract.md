@@ -10,7 +10,7 @@
 - State: keep public validation backend-disabled. Consumers that adopt remote state should declare backend blocks in consumer-owned environment configuration and keep backend arguments in untracked config, not committed secrets or local state files.
 - Validation: pull-request CI and `./scripts/validate.sh` must use `terraform init -backend=false` so public checks do not need backend credentials. The validation script must also format-check committed `.tfvars.example` and `config/backend.hcl.example` files through temporary Terraform-readable copies.
 - Optional lint: provider-aware TFLint checks are local opt-in through `TERRAFORM_ENABLE_TFLINT=1`; public CI and standard validation must not require TFLint, plugin downloads, credentials, or backend state. When the root `.tflint.hcl` file is present, validation passes it to TFLint with an absolute `--config` path. The generated `.tflint.d/` plugin cache remains untracked.
-- Public safety: pull-request CI runs without path filters and the validation script rejects tracked state, plans, real `.tfvars`, private key material, generated Terraform directories, TFLint plugin cache directories, lockfiles, crash logs, local env or Terraform CLI credential files, and real backend config under `config/*.hcl` other than `config/backend.hcl.example`
+- Public safety: pull-request CI runs without path filters and the validation script rejects tracked state, plans, real `.tfvars`, private key material, generated Terraform directories, TFLint plugin cache directories, lockfiles, crash logs, local env, Terraform CLI credential files, cloud CLI credential directories, and real backend config under `config/*.hcl` other than `config/backend.hcl.example`
 
 ## Runtime And Provider Contract
 

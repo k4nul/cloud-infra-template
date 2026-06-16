@@ -50,7 +50,7 @@ Before requesting review, verify that the change keeps these files untracked:
 - Terraform state, plans, crash logs, and generated `.terraform/` directories.
 - Provider lockfiles and `.tflint.d/` plugin cache directories.
 - Real `.tfvars`, `.tfvars.json`, `.env`, `.envrc`, Terraform CLI credential
-  files, and private key material.
+  files, cloud CLI credential directories, and private key material.
 - Real backend argument files under `config/*.hcl`.
 
 The only committed variable and backend examples should be
@@ -139,9 +139,9 @@ For an AWS provider upgrade:
    available.
 
 Do not commit generated `.terraform/` directories, downloaded provider plugins,
-real backend config, real `.tfvars`, plans, state, local CLI credentials, or
-provider lockfiles unless the lockfile policy is intentionally changed for every
-environment root in the same package.
+real backend config, real `.tfvars`, plans, state, local or cloud CLI
+credentials, or provider lockfiles unless the lockfile policy is intentionally
+changed for every environment root in the same package.
 
 ## Backend And Real Use Boundaries
 

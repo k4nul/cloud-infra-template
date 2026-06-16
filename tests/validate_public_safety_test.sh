@@ -296,6 +296,10 @@ test_ignores_untracked_forbidden_files() {
   touch "$target/.terraform.lock.hcl"
   touch "$target/config/prod.hcl"
   touch "$target/.env"
+  mkdir -p "$target/.aws" "$target/.azure" "$target/.config/gcloud"
+  touch "$target/.aws/credentials"
+  touch "$target/.azure/azureProfile.json"
+  touch "$target/.config/gcloud/application_default_credentials.json"
   touch "$target/.terraformrc"
   touch "$target/crash.log"
   touch "$target/id_ed25519"
@@ -313,6 +317,9 @@ test_rejects_tracked_forbidden_files() {
   mkdir -p "$target/terraform/envs/dev/.terraform/providers" \
     "$target/.terraform.d" \
     "$target/.tflint.d/plugins" \
+    "$target/.aws" \
+    "$target/.azure" \
+    "$target/.config/gcloud" \
     "$target/nested"
   touch "$target/.env"
   touch "$target/.env.local"
@@ -321,6 +328,10 @@ test_rejects_tracked_forbidden_files() {
   touch "$target/terraform.rc"
   touch "$target/.terraform.d/credentials.tfrc.json"
   touch "$target/.tflint.d/plugins/cache.txt"
+  touch "$target/.aws/credentials"
+  touch "$target/.aws/config"
+  touch "$target/.azure/azureProfile.json"
+  touch "$target/.config/gcloud/application_default_credentials.json"
   touch "$target/.terraform.lock.hcl"
   touch "$target/terraform/envs/dev/.terraform/providers/cache.txt"
   touch "$target/terraform/envs/dev/terraform.tfvars"
@@ -369,6 +380,10 @@ test_rejects_tracked_forbidden_files() {
   assert_contains "$output" "terraform.rc"
   assert_contains "$output" ".terraform.d/credentials.tfrc.json"
   assert_contains "$output" ".tflint.d/plugins/cache.txt"
+  assert_contains "$output" ".aws/credentials"
+  assert_contains "$output" ".aws/config"
+  assert_contains "$output" ".azure/azureProfile.json"
+  assert_contains "$output" ".config/gcloud/application_default_credentials.json"
   assert_contains "$output" ".terraform.lock.hcl"
   assert_contains "$output" "terraform/envs/dev/.terraform/providers/cache.txt"
   assert_contains "$output" "terraform/envs/dev/terraform.tfvars"

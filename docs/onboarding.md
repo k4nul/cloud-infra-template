@@ -82,8 +82,9 @@ terraform init -backend-config=../../../config/backend.hcl
 ```
 
 Real `.tfvars`, backend config, state, plans, crash logs, generated
-`.terraform/` directories, lockfiles, local env or Terraform CLI credential
-files, keys, and account-specific details must remain untracked.
+`.terraform/` directories, lockfiles, local env, Terraform CLI credential files,
+cloud CLI credential directories, keys, and account-specific details must remain
+untracked.
 
 ## Public Network And Workload Defaults
 

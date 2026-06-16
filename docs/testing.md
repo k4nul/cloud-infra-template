@@ -64,8 +64,8 @@ validation for it.
 The script performs these checks in order:
 
 1. Uses `git ls-files` to reject tracked generated, state, plan, secret, real
-   `.tfvars`, lockfile, crash log, local env or Terraform CLI credential,
-   private key, or real backend files under `config/*.hcl`.
+   `.tfvars`, lockfile, crash log, local env, Terraform CLI credential, cloud
+   CLI credential, private key, or real backend files under `config/*.hcl`.
 2. Runs `terraform fmt -check -recursive terraform`.
 3. Copies committed `.tfvars.example` and `config/backend.hcl.example` files to
    temporary `.tfvars` names, then runs `terraform fmt -check -diff` against
@@ -161,8 +161,9 @@ The validation script rejects these tracked file classes:
 - Terraform plan files.
 - Real `.tfvars` or `.tfvars.json` files.
 - Terraform crash logs.
-- Local env and Terraform CLI credential files such as `.env`, `.envrc`,
-  `.terraformrc`, `terraform.rc`, or `.terraform.d/` contents.
+- Local env, Terraform CLI credential, and cloud CLI credential files such as
+  `.env`, `.envrc`, `.terraformrc`, `terraform.rc`, `.terraform.d/` contents,
+  `.aws/`, `.azure/`, or `.config/gcloud/`.
 - Private key material such as `.pem`, `.key`, `.p12`, `.pfx`, `.p8`, `.jks`,
   `.keystore`, `id_rsa`, `id_dsa`, `id_ecdsa`, or `id_ed25519` files.
 - Real backend config under `config/*.hcl`.
