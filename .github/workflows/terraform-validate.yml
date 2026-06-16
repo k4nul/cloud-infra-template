@@ -31,6 +31,9 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Validate CI workflow contract
+        run: ./scripts/validate-ci-workflow.sh
+
       - name: Test validation contract
         run: ./tests/validate_public_safety_test.sh
 

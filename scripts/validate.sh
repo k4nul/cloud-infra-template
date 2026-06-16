@@ -12,6 +12,15 @@ TERRAFORM_ENABLE_TFLINT="${TERRAFORM_ENABLE_TFLINT:-0}"
 TERRAFORM_BIN="${TERRAFORM_BIN:-terraform}"
 CHECKOV_BIN="${CHECKOV_BIN:-checkov}"
 TFLINT_BIN="${TFLINT_BIN:-tflint}"
+EXAMPLE_TMP_DIR=""
+
+cleanup_example_tmp_dir() {
+  if [ -n "$EXAMPLE_TMP_DIR" ] && [ -d "$EXAMPLE_TMP_DIR" ]; then
+    rm -rf "$EXAMPLE_TMP_DIR"
+  fi
+}
+
+trap cleanup_example_tmp_dir EXIT HUP INT TERM
 
 case "$TERRAFORM_VALIDATE_MODE" in
   full | static)
@@ -116,6 +125,25 @@ validate_environment_roots() {
   done
 }
 
+validate_public_examples() {
+  EXAMPLE_TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/cloud-infra-template-examples.XXXXXX")
+
+  for tfvars_example in terraform/envs/*/terraform.tfvars.example; do
+    if [ ! -f "$tfvars_example" ]; then
+      continue
+    fi
+
+    env_name=$(basename "$(dirname "$tfvars_example")")
+    cp "$tfvars_example" "$EXAMPLE_TMP_DIR/$env_name.tfvars"
+    "$TERRAFORM_BIN" fmt -check -diff "$EXAMPLE_TMP_DIR/$env_name.tfvars"
+  done
+
+  if [ -f "config/backend.hcl.example" ]; then
+    cp "config/backend.hcl.example" "$EXAMPLE_TMP_DIR/backend.tfvars"
+    "$TERRAFORM_BIN" fmt -check -diff "$EXAMPLE_TMP_DIR/backend.tfvars"
+  fi
+}
+
 run_optional_policy_scan() {
   if [ "$TERRAFORM_ENABLE_CHECKOV" != "1" ]; then
     return 0
@@ -147,6 +175,7 @@ check_public_safe_files
 ensure_command_available "$TERRAFORM_BIN" \
   "Install Terraform CLI >= 1.6.0, add it to PATH, or set TERRAFORM_BIN."
 "$TERRAFORM_BIN" fmt -check -recursive terraform
+validate_public_examples
 if [ "$TERRAFORM_VALIDATE_MODE" != "static" ]; then
   validate_environment_roots
 fi

@@ -192,6 +192,82 @@ run_validation() {
   )
 }
 
+run_ci_workflow_validation() {
+  workflow_file=$1
+
+  CI_WORKFLOW_FILE="$workflow_file" "$repo_root/scripts/validate-ci-workflow.sh"
+}
+
+test_ci_workflow_contract_accepts_repository_workflow() {
+  output=$(run_ci_workflow_validation "$repo_root/.github/workflows/terraform-validate.yml" 2>&1) || {
+    fail "expected repository CI workflow contract to pass, got: $output"
+  }
+
+  assert_contains "$output" "ok - CI workflow contract"
+}
+
+test_ci_workflow_contract_rejects_pull_request_path_filters() {
+  workflow_file="$test_tmp/terraform-validate-path-filter.yml"
+
+  awk '
+    /^  pull_request:[[:space:]]*$/ {
+      print
+      print "    paths:"
+      print "      - terraform/**"
+      next
+    }
+    { print }
+  ' "$repo_root/.github/workflows/terraform-validate.yml" >"$workflow_file"
+
+  set +e
+  output=$(run_ci_workflow_validation "$workflow_file" 2>&1)
+  status=$?
+  set -e
+
+  [ "$status" -ne 0 ] || fail "expected pull_request path filters to fail CI workflow validation"
+  assert_contains "$output" "pull_request path filters must not be configured"
+}
+
+test_ci_workflow_contract_rejects_pull_request_target() {
+  workflow_file="$test_tmp/terraform-validate-pr-target.yml"
+
+  sed 's/^  pull_request:/  pull_request_target:/' \
+    "$repo_root/.github/workflows/terraform-validate.yml" >"$workflow_file"
+
+  set +e
+  output=$(run_ci_workflow_validation "$workflow_file" 2>&1)
+  status=$?
+  set -e
+
+  [ "$status" -ne 0 ] || fail "expected pull_request_target to fail CI workflow validation"
+  assert_contains "$output" "pull_request_target"
+}
+
+test_ci_workflow_contract_rejects_secret_usage() {
+  workflow_file="$test_tmp/terraform-validate-secrets.yml"
+
+  awk '
+    /^          persist-credentials: false[[:space:]]*$/ {
+      print
+      print ""
+      print "      - name: Configure credentials"
+      print "        env:"
+      print "          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}"
+      print "        run: true"
+      next
+    }
+    { print }
+  ' "$repo_root/.github/workflows/terraform-validate.yml" >"$workflow_file"
+
+  set +e
+  output=$(run_ci_workflow_validation "$workflow_file" 2>&1)
+  status=$?
+  set -e
+
+  [ "$status" -ne 0 ] || fail "expected repository secret usage to fail CI workflow validation"
+  assert_contains "$output" "must not reference repository secrets"
+}
+
 test_allows_public_examples() {
   target="$test_tmp/allows-public-examples"
   make_target_repo "$target"
@@ -391,6 +467,32 @@ test_static_mode_skips_environment_init_validate() {
   assert_not_contains "$terraform_calls" "-chdir=terraform/envs/dev validate"
   assert_not_contains "$terraform_calls" "-chdir=terraform/envs/staging init"
   assert_not_contains "$terraform_calls" "-chdir=terraform/envs/prod init"
+}
+
+test_public_examples_are_format_checked_as_hcl() {
+  target="$test_tmp/public-example-format"
+  make_target_repo "$target"
+  terraform_log="$test_tmp/public-example-format-terraform.log"
+
+  cat >"$target/terraform/envs/dev/terraform.tfvars.example" <<'EXAMPLE'
+environment_name = "dev"
+EXAMPLE
+  cat >"$target/config/backend.hcl.example" <<'EXAMPLE'
+bucket = "replace-with-terraform-state-bucket"
+key    = "cloud-infra-template/dev/terraform.tfstate"
+EXAMPLE
+
+  run_validation "$target" "$terraform_log" >"$test_tmp/validate-public-example-format.out" 2>&1 || {
+    output=$(cat "$test_tmp/validate-public-example-format.out")
+    fail "expected public example format checks to pass, got: $output"
+  }
+
+  terraform_calls=$(cat "$terraform_log")
+
+  assert_contains "$terraform_calls" "fmt -check -recursive terraform"
+  assert_contains "$terraform_calls" "fmt -check -diff"
+  assert_contains "$terraform_calls" "dev.tfvars"
+  assert_contains "$terraform_calls" "backend.tfvars"
 }
 
 test_checkov_runs_only_when_enabled() {
@@ -667,12 +769,17 @@ make_terraform_stub
 make_checkov_stub
 make_tflint_stub
 
+test_ci_workflow_contract_accepts_repository_workflow
+test_ci_workflow_contract_rejects_pull_request_path_filters
+test_ci_workflow_contract_rejects_pull_request_target
+test_ci_workflow_contract_rejects_secret_usage
 test_allows_public_examples
 test_ignores_untracked_forbidden_files
 test_rejects_tracked_forbidden_files
 test_default_matrix_runs_all_environment_roots
 test_custom_matrix_limits_environment_roots
 test_static_mode_skips_environment_init_validate
+test_public_examples_are_format_checked_as_hcl
 test_checkov_runs_only_when_enabled
 test_tflint_runs_only_when_enabled
 test_tflint_uses_root_config_when_present

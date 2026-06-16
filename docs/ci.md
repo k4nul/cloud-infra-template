@@ -44,7 +44,18 @@ running `tflint --init`, or run the optional local Checkov scan with
 
 ## Validation Commands
 
-CI first runs the validation contract test:
+CI first verifies that the workflow still matches the public-safe contract:
+
+```bash
+./scripts/validate-ci-workflow.sh
+```
+
+That check rejects `pull_request_target`, pull-request path filters, repository
+secret references, persisted checkout credentials, cloud credential setup, write
+permissions, missing scanner opt-out flags, Terraform version drift, and a
+missing public validation step.
+
+CI then runs the validation contract test:
 
 ```bash
 ./tests/validate_public_safety_test.sh
@@ -53,7 +64,8 @@ CI first runs the validation contract test:
 That test uses temporary Git repositories and stubbed Terraform, TFLint, and
 Checkov commands to verify the public-safety file gate, the default environment
 matrix, custom `TERRAFORM_ENV_DIRS` behavior, and the optional TFLint and
-Checkov opt-ins without needing provider downloads.
+Checkov opt-ins without needing provider downloads. It also checks that unsafe
+workflow variants are rejected by the workflow contract validator.
 
 CI then runs the public-safe Terraform validation:
 
@@ -68,11 +80,14 @@ The validation script:
    `.terraform/` directories, `.tflint.d/` plugin cache directories, lockfiles,
    and real backend config under `config/*.hcl`,
 2. runs `terraform fmt -check -recursive terraform`,
-3. initializes each selected environment root with `terraform init
+3. copies committed `.tfvars.example` and `config/backend.hcl.example` files to
+   temporary `.tfvars` names and runs `terraform fmt -check -diff` against those
+   parseable copies,
+4. initializes each selected environment root with `terraform init
    -backend=false -input=false -no-color`,
-4. runs `terraform validate -no-color` for each selected environment root,
-5. skips TFLint unless `TERRAFORM_ENABLE_TFLINT=1` is set,
-6. skips Checkov unless `TERRAFORM_ENABLE_CHECKOV=1` is set.
+5. runs `terraform validate -no-color` for each selected environment root,
+6. skips TFLint unless `TERRAFORM_ENABLE_TFLINT=1` is set,
+7. skips Checkov unless `TERRAFORM_ENABLE_CHECKOV=1` is set.
 
 The default environment matrix is:
 

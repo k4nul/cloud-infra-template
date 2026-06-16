@@ -8,7 +8,7 @@
 - Environment composition module: wires the network, IAM, and deployment modules with the shared name/tag convention and workload ingress controls
 - Environment roots: keep provider configuration, environment-specific defaults, CIDR, region, names, and tags outside lower-level reusable modules
 - State: keep public validation backend-disabled. Consumers that adopt remote state should declare backend blocks in consumer-owned environment configuration and keep backend arguments in untracked config, not committed secrets or local state files.
-- Validation: pull-request CI and `./scripts/validate.sh` must use `terraform init -backend=false` so public checks do not need backend credentials
+- Validation: pull-request CI and `./scripts/validate.sh` must use `terraform init -backend=false` so public checks do not need backend credentials. The validation script must also format-check committed `.tfvars.example` and `config/backend.hcl.example` files through temporary Terraform-readable copies.
 - Optional lint: provider-aware TFLint checks are local opt-in through `TERRAFORM_ENABLE_TFLINT=1`; public CI and standard validation must not require TFLint, plugin downloads, credentials, or backend state. When the root `.tflint.hcl` file is present, validation passes it to TFLint with an absolute `--config` path. The generated `.tflint.d/` plugin cache remains untracked.
 - Public safety: pull-request CI runs without path filters and the validation script rejects tracked state, plans, real `.tfvars`, private key material, generated Terraform directories, TFLint plugin cache directories, lockfiles, crash logs, local env or Terraform CLI credential files, and real backend config under `config/*.hcl` other than `config/backend.hcl.example`
 
@@ -77,7 +77,9 @@ The lower-level reusable modules expose only their owned resources:
 - `terraform/envs/*/terraform.tfvars.example` files are safe public examples and must not contain account IDs, private CIDRs that reveal an organization, real role names, or secrets.
 - `config/backend.hcl.example` is the only backend argument example that should be committed. The checked-in environment roots do not declare a backend block. Real backend config remains operator-owned, and the backend state `key` should be changed per environment in the untracked local copy when a consumer wires remote state.
 - Example ingress stays closed with `ingress_cidrs = []` and `allow_public_ingress = false`.
-- Example validation should use backend-disabled initialization before manual plan or validate commands.
+- Example validation should format-check committed example variable and backend
+  files and use backend-disabled initialization before manual plan or validate
+  commands.
 - CI must run the public-safety file check for every pull request, including documentation or config-only changes.
 
 ## Upgrade And Validation Lane

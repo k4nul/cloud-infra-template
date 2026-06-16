@@ -24,6 +24,12 @@ To test the validation script contract without downloading providers:
 ./tests/validate_public_safety_test.sh
 ```
 
+To test only the GitHub Actions workflow contract:
+
+```bash
+./scripts/validate-ci-workflow.sh
+```
+
 To run the public-safety and formatting lane without Terraform provider
 registry downloads:
 
@@ -61,14 +67,17 @@ The script performs these checks in order:
    `.tfvars`, lockfile, crash log, local env or Terraform CLI credential,
    private key, or real backend files under `config/*.hcl`.
 2. Runs `terraform fmt -check -recursive terraform`.
-3. Unless `TERRAFORM_VALIDATE_MODE=static` is set, runs
+3. Copies committed `.tfvars.example` and `config/backend.hcl.example` files to
+   temporary `.tfvars` names, then runs `terraform fmt -check -diff` against
+   those parseable copies.
+4. Unless `TERRAFORM_VALIDATE_MODE=static` is set, runs
    `terraform init -backend=false -input=false -no-color` for each selected
    environment root.
-4. Unless `TERRAFORM_VALIDATE_MODE=static` is set, runs
+5. Unless `TERRAFORM_VALIDATE_MODE=static` is set, runs
    `terraform validate -no-color` for each selected environment root.
-5. Runs recursive TFLint against `terraform/`, using the root `.tflint.hcl`
+6. Runs recursive TFLint against `terraform/`, using the root `.tflint.hcl`
    config when present, only when `TERRAFORM_ENABLE_TFLINT=1` is set.
-6. Runs `checkov -d terraform --quiet` only when
+7. Runs `checkov -d terraform --quiet` only when
    `TERRAFORM_ENABLE_CHECKOV=1` is set.
 
 By default, the environment matrix is:
@@ -83,19 +92,28 @@ To validate a smaller matrix locally:
 TERRAFORM_ENV_DIRS="terraform/envs/dev" ./scripts/validate.sh
 ```
 
+`./scripts/validate-ci-workflow.sh` verifies that the committed GitHub Actions
+workflow still uses public-safe triggers, read-only permissions, no repository
+secrets, no persisted checkout credentials, pinned Terraform setup, and the
+expected validation steps.
+
 `./tests/validate_public_safety_test.sh` covers the validation wrapper behavior
 around the tracked-file gate, the default matrix, custom `TERRAFORM_ENV_DIRS`,
 and the optional TFLint and Checkov opt-ins by running against temporary
-repositories with stubbed tool commands.
+repositories with stubbed tool commands. It also uses temporary workflow
+fixtures to prove unsafe CI variants fail the workflow contract validator and
+checks that public example files are formatted through Terraform-readable
+temporary copies.
 
 ## Pull-Request CI Parity
 
-`.github/workflows/terraform-validate.yml` runs the validation contract test and
-then the same validation script for pull requests, pushes to `main`, and manual
-workflow dispatches. The workflow has no pull-request path filters, pins
-Terraform `1.6.6`, disables Terraform input prompts, and keeps
-`TERRAFORM_ENABLE_TFLINT=0` and `TERRAFORM_ENABLE_CHECKOV=0` so public CI does
-not require extra scanner installation, plugin downloads, or credentials.
+`.github/workflows/terraform-validate.yml` runs the workflow contract validator,
+the validation contract test, and then the same validation script for pull
+requests, pushes to `main`, and manual workflow dispatches. The workflow has no
+pull-request path filters, pins Terraform `1.6.6`, disables Terraform input
+prompts, and keeps `TERRAFORM_ENABLE_TFLINT=0` and
+`TERRAFORM_ENABLE_CHECKOV=0` so public CI does not require extra scanner
+installation, plugin downloads, or credentials.
 
 Do not add pull-request path filters that would let documentation-only or
 configuration-only changes skip the public-safety file check.

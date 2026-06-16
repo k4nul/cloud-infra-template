@@ -42,8 +42,9 @@ infrastructure details.
 ./scripts/validate.sh
 ```
 
-The validation script runs Terraform formatting, backend-disabled initialization,
-and `terraform validate` for the checked-in environment roots.
+The validation script runs Terraform formatting, public example HCL formatting,
+backend-disabled initialization, and `terraform validate` for the checked-in
+environment roots.
 
 ## Inspect One Environment
 
