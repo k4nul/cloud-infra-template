@@ -29,6 +29,8 @@ infrastructure details.
   example, and validation contract.
 - [docs/ci.md](docs/ci.md): pull-request CI triggers, environment, and review
   expectations.
+- [docs/maintenance.md](docs/maintenance.md): maintainer workflow, change
+  package sizing, validation decision tree, and public-template hygiene.
 - [docs/testing.md](docs/testing.md): local validation, CI parity, optional
   TFLint and Checkov scans, and public-safety file checks.
 - [docs/troubleshooting.md](docs/troubleshooting.md): common validation failures
@@ -95,4 +97,6 @@ to be committed.
 
 See [docs/testing.md](docs/testing.md) for the validation matrix and
 [docs/ci.md](docs/ci.md) for pull-request CI behavior, and
-[docs/troubleshooting.md](docs/troubleshooting.md) for common failure fixes.
+[docs/maintenance.md](docs/maintenance.md) for the maintainer workflow and
+validation decision tree. See [docs/troubleshooting.md](docs/troubleshooting.md)
+for common failure fixes.

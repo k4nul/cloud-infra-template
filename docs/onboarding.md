@@ -24,6 +24,8 @@ environment-specific values in the `dev`, `staging`, and `prod` root modules.
 - `config/backend.hcl.example`: public-safe backend argument example only.
 - `docs/infra-contract.md`: input, output, example, and validation contract.
 - `docs/ci.md`: pull-request CI triggers, environment, and review expectations.
+- `docs/maintenance.md`: maintainer workflow, change package sizing, validation
+  decision tree, and public-template hygiene.
 - `docs/testing.md`: local and CI validation guidance.
 - `docs/troubleshooting.md`: common validation failures and fixes.
 - `docs/instructions/phase-gates.json`: maintainer phase metadata, allowed
@@ -105,5 +107,7 @@ For template changes:
    validation expectations change. New or temporarily unreferenced modules are
    not covered by the default environment-root matrix until they are wired into
    an environment root or added to an explicit `TERRAFORM_ENV_DIRS` check.
-4. Review [ci.md](ci.md), then run `terraform fmt -check -recursive terraform`
+4. Review [maintenance.md](maintenance.md) for the right change package and
+   validation decision tree.
+5. Review [ci.md](ci.md), then run `terraform fmt -check -recursive terraform`
    and `./scripts/validate.sh` before opening a pull request.

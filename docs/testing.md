@@ -119,7 +119,9 @@ Do not add pull-request path filters that would let documentation-only or
 configuration-only changes skip the public-safety file check.
 
 See [ci.md](ci.md) for the workflow triggers, pinned Terraform version,
-environment variables, and pull-request checklist expectations.
+environment variables, and pull-request checklist expectations. See
+[maintenance.md](maintenance.md) for choosing the smallest useful validation
+command for a maintenance package.
 
 ## Optional Policy Scan
 

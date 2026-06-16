@@ -115,7 +115,9 @@ Before requesting review:
   validation behavior, or environment-root wiring changes,
 - wire new or temporarily unreferenced modules into an environment root or an
   explicit `TERRAFORM_ENV_DIRS` validation path before relying on the default
-  environment matrix.
+  environment matrix,
+- use [maintenance.md](maintenance.md) to keep the change package and validation
+  evidence aligned.
 
 If CI fails, start with [troubleshooting.md](troubleshooting.md). The most common
 public CI failures are a validation contract regression, missing formatting, an
