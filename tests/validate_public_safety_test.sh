@@ -268,6 +268,85 @@ test_ci_workflow_contract_rejects_secret_usage() {
   assert_contains "$output" "must not reference repository secrets"
 }
 
+test_ci_workflow_contract_rejects_write_permissions() {
+  workflow_file="$test_tmp/terraform-validate-write-permissions.yml"
+
+  awk '
+    /^  contents: read[[:space:]]*$/ {
+      print
+      print "  actions: write"
+      next
+    }
+    { print }
+  ' "$repo_root/.github/workflows/terraform-validate.yml" >"$workflow_file"
+
+  set +e
+  output=$(run_ci_workflow_validation "$workflow_file" 2>&1)
+  status=$?
+  set -e
+
+  [ "$status" -ne 0 ] || fail "expected write permissions to fail CI workflow validation"
+  assert_contains "$output" "workflow permissions must not grant write access"
+}
+
+test_ci_workflow_contract_rejects_id_token_permissions() {
+  workflow_file="$test_tmp/terraform-validate-id-token.yml"
+
+  awk '
+    /^permissions:[[:space:]]*$/ {
+      print
+      print "  id-token: read"
+      next
+    }
+    { print }
+  ' "$repo_root/.github/workflows/terraform-validate.yml" >"$workflow_file"
+
+  set +e
+  output=$(run_ci_workflow_validation "$workflow_file" 2>&1)
+  status=$?
+  set -e
+
+  [ "$status" -ne 0 ] || fail "expected id-token permissions to fail CI workflow validation"
+  assert_contains "$output" "workflow must not request id-token permissions"
+}
+
+test_ci_workflow_contract_rejects_persisted_checkout_credentials() {
+  workflow_file="$test_tmp/terraform-validate-persisted-checkout.yml"
+
+  sed 's/^          persist-credentials: false/          persist-credentials: true/' \
+    "$repo_root/.github/workflows/terraform-validate.yml" >"$workflow_file"
+
+  set +e
+  output=$(run_ci_workflow_validation "$workflow_file" 2>&1)
+  status=$?
+  set -e
+
+  [ "$status" -ne 0 ] || fail "expected persisted checkout credentials to fail CI workflow validation"
+  assert_contains "$output" "checkout credentials must not be persisted"
+}
+
+test_ci_workflow_contract_rejects_cloud_credential_action() {
+  workflow_file="$test_tmp/terraform-validate-cloud-credentials.yml"
+
+  awk '
+    /^      - name: Validate CI workflow contract[[:space:]]*$/ {
+      print "      - name: Configure cloud credentials"
+      print "        uses: aws-actions/configure-aws-credentials@v4"
+      print
+      next
+    }
+    { print }
+  ' "$repo_root/.github/workflows/terraform-validate.yml" >"$workflow_file"
+
+  set +e
+  output=$(run_ci_workflow_validation "$workflow_file" 2>&1)
+  status=$?
+  set -e
+
+  [ "$status" -ne 0 ] || fail "expected cloud credential action to fail CI workflow validation"
+  assert_contains "$output" "public validation workflow must not configure cloud credentials"
+}
+
 test_allows_public_examples() {
   target="$test_tmp/allows-public-examples"
   make_target_repo "$target"
@@ -788,6 +867,10 @@ test_ci_workflow_contract_accepts_repository_workflow
 test_ci_workflow_contract_rejects_pull_request_path_filters
 test_ci_workflow_contract_rejects_pull_request_target
 test_ci_workflow_contract_rejects_secret_usage
+test_ci_workflow_contract_rejects_write_permissions
+test_ci_workflow_contract_rejects_id_token_permissions
+test_ci_workflow_contract_rejects_persisted_checkout_credentials
+test_ci_workflow_contract_rejects_cloud_credential_action
 test_allows_public_examples
 test_ignores_untracked_forbidden_files
 test_rejects_tracked_forbidden_files
