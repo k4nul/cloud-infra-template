@@ -47,8 +47,11 @@ Run the full validation script after Terraform, example, module, input, or
 output changes. The standalone formatting command is useful when you want to
 check formatting before running the full environment matrix. Static mode is for
 phase gates and restricted environments where the public-safety and formatting
-contract must run without provider downloads; it does not replace full
-`terraform init -backend=false` and `terraform validate` coverage.
+contract must run without provider downloads; it skips only environment-root
+`terraform init -backend=false` and `terraform validate`. Optional TFLint and
+Checkov scans still run in static mode when their opt-in variables are enabled,
+so leave `TERRAFORM_ENABLE_TFLINT=0` and `TERRAFORM_ENABLE_CHECKOV=0` unless the
+scanner dependency is intentionally available.
 
 The default validation matrix covers modules through the checked-in environment
 roots that instantiate the shared `terraform/modules/environment` composition
@@ -125,8 +128,11 @@ command for a maintenance package.
 
 ## Optional Policy Scan
 
-TFLint is optional and local by default. Install TFLint, run `tflint --init`
-from the repository root to install the configured AWS ruleset plugin, then run:
+TFLint is optional and local by default. The checked-in `.tflint.hcl` enables
+module-aware linting and pins `tflint-ruleset-aws` `0.32.0` from
+`github.com/terraform-linters/tflint-ruleset-aws`. Install TFLint, run
+`tflint --init` from the repository root to install that configured AWS ruleset
+plugin, then run:
 
 ```bash
 TERRAFORM_ENABLE_TFLINT=1 ./scripts/validate.sh

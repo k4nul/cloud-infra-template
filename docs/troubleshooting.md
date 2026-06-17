@@ -32,6 +32,12 @@ registry downloads:
 TERRAFORM_VALIDATE_MODE=static ./scripts/validate.sh
 ```
 
+Static mode skips environment-root `terraform init` and `terraform validate`,
+but it still runs optional TFLint or Checkov when
+`TERRAFORM_ENABLE_TFLINT=1` or `TERRAFORM_ENABLE_CHECKOV=1` is set. Leave those
+opt-ins disabled when the scanner tools are not part of the restricted
+environment.
+
 CI currently uses Terraform `1.6.6`, so matching that version locally is the
 closest parity check.
 
@@ -123,9 +129,10 @@ TERRAFORM_ENABLE_TFLINT=1 ./scripts/validate.sh
 If the command reports that `tflint` was not found, install TFLint, set
 `TFLINT_BIN=/path/to/tflint`, or rerun the standard public CI lane without that
 environment variable. If the configured AWS ruleset plugin is missing, run
-`tflint --init` from the repository root and rerun validation. The validation
-script passes the repository root `.tflint.hcl` as an explicit config file when
-it exists. Keep the generated `.tflint.d/` plugin cache untracked.
+`tflint --init` from the repository root and rerun validation. The checked-in
+`.tflint.hcl` pins `tflint-ruleset-aws` `0.32.0`, and the validation script
+passes that file as an explicit config file when it exists. Keep the generated
+`.tflint.d/` plugin cache untracked.
 
 ## Optional Checkov Failure
 

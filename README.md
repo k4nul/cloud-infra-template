@@ -7,9 +7,10 @@ Terraform template for AWS network, IAM, and deployment infrastructure.
 This repository is prepared for public collaboration under the [MIT License](LICENSE).
 See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and
 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) before opening issues or pull requests.
-Do not commit Terraform state, real `.tfvars`, backend credentials, plans, local
-env, Terraform CLI credentials, cloud CLI credentials, crash logs, keys, or
-account-specific infrastructure details.
+Do not commit Terraform state, plans, generated `.terraform/` directories,
+provider lockfiles, `.tflint.d/` plugin caches, real `.tfvars`, real backend
+config under `config/*.hcl`, local env, Terraform CLI credentials, cloud CLI
+credentials, crash logs, keys, or account-specific infrastructure details.
 
 ## Layout
 
@@ -85,8 +86,11 @@ The validation script checks `dev`, `staging`, and `prod` by default. Set
 `TERRAFORM_ENV_DIRS` to a space-separated list of environment root paths to
 validate a smaller or custom matrix. Set `TERRAFORM_VALIDATE_MODE=static` when
 you need the public-safety and formatting lane without provider registry
-downloads. Set `TERRAFORM_ENABLE_TFLINT=1` to add an optional provider-aware
-TFLint scan after installing TFLint and running `tflint --init`, or set
+downloads. Static mode skips environment root `init` and `validate`, but still
+runs optional TFLint or Checkov scans when their opt-in variables are enabled.
+Set `TERRAFORM_ENABLE_TFLINT=1` to add an optional provider-aware TFLint scan
+after installing TFLint and running `tflint --init`; the checked-in
+`.tflint.hcl` pins `tflint-ruleset-aws` `0.32.0`. Set
 `TERRAFORM_ENABLE_CHECKOV=1` to add an optional Checkov policy scan when
 `checkov` is installed locally. The script also fails when tracked files include
 generated Terraform directories, TFLint plugin cache directories, lockfiles,

@@ -17,6 +17,11 @@ and configuration-only changes still run the validation contract test and the
 public-safety file check in `./scripts/validate.sh`, which prevents accidental
 commits of local Terraform artifacts or operator-owned secrets.
 
+The validation job cancels older in-progress runs for the same Git ref and has a
+15-minute timeout. Treat a cancellation as superseded CI for that ref, and treat
+a timeout as a validation environment or provider-download blocker until the
+failed step proves otherwise.
+
 ## CI Environment
 
 The workflow runs on `ubuntu-latest` and pins Terraform through
@@ -39,7 +44,8 @@ TERRAFORM_ENABLE_TFLINT=0
 TFLint and Checkov are disabled in public CI so the required lane has no extra
 scanner dependency. Run the optional local TFLint scan with
 `TERRAFORM_ENABLE_TFLINT=1 ./scripts/validate.sh` after installing TFLint and
-running `tflint --init`, or run the optional local Checkov scan with
+running `tflint --init`; the checked-in `.tflint.hcl` pins the AWS ruleset
+plugin `tflint-ruleset-aws` `0.32.0`. Run the optional local Checkov scan with
 `TERRAFORM_ENABLE_CHECKOV=1 ./scripts/validate.sh` when Checkov is installed.
 
 ## Validation Commands
@@ -99,7 +105,9 @@ terraform/envs/dev terraform/envs/staging terraform/envs/prod
 Phase gates or restricted local environments can run
 `TERRAFORM_VALIDATE_MODE=static ./scripts/validate.sh` to exercise the
 public-safety and formatting contract without provider registry downloads.
-Public CI intentionally runs the default full mode.
+Static mode skips only environment-root `terraform init` and `terraform
+validate`; optional TFLint and Checkov scans still run when their opt-in
+variables are enabled. Public CI intentionally runs the default full mode.
 
 ## Pull-Request Expectations
 
