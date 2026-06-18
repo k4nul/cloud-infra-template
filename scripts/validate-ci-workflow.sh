@@ -4,7 +4,7 @@ set -eu
 workflow_file="${CI_WORKFLOW_FILE:-.github/workflows/terraform-validate.yml}"
 
 fail() {
-  echo "CI workflow validation failed: $1" >&2
+  printf '%s\n' "CI workflow validation failed: $1" >&2
   exit 1
 }
 
@@ -172,4 +172,4 @@ assert_order '^[[:space:]]{8}uses:[[:space:]]*hashicorp/setup-terraform@v3[[:spa
   '^[[:space:]]{6}- name:[[:space:]]*Run public-safe validation[[:space:]]*$' \
   "Terraform setup must run before public-safe validation"
 
-echo "ok - CI workflow contract"
+printf '%s\n' "ok - CI workflow contract"

@@ -5,13 +5,15 @@ repo_root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 test_tmp=$(mktemp -d "${TMPDIR:-/tmp}/cloud-infra-template-test.XXXXXX")
 
 cleanup() {
-  rm -rf "$test_tmp"
+  if [ -n "$test_tmp" ] && [ -d "$test_tmp" ]; then
+    rm -rf "$test_tmp"
+  fi
 }
 
 trap cleanup EXIT INT TERM
 
 fail() {
-  echo "not ok - $1" >&2
+  printf '%s\n' "not ok - $1" >&2
   exit 1
 }
 
@@ -64,7 +66,7 @@ case "${1:-}" in
     exit 0
     ;;
   *)
-    echo "unexpected terraform command: $*" >&2
+    printf '%s\n' "unexpected terraform command: $*" >&2
     exit 2
     ;;
 esac
@@ -125,7 +127,7 @@ case "${1:-}" in
     exit 0
     ;;
   *)
-    echo "unexpected terraform command: $*" >&2
+    printf '%s\n' "unexpected terraform command: $*" >&2
     exit 2
     ;;
 esac
@@ -188,7 +190,7 @@ run_validation() {
 
   (
     cd "$target"
-    PATH="$test_tmp/bin:$PATH" TERRAFORM_STUB_LOG="$terraform_log" "$repo_root/scripts/validate.sh"
+    PATH="$test_tmp/bin${PATH:+:$PATH}" TERRAFORM_STUB_LOG="$terraform_log" "$repo_root/scripts/validate.sh"
   )
 }
 
@@ -520,7 +522,7 @@ test_custom_matrix_limits_environment_roots() {
 
   (
     cd "$target"
-    PATH="$test_tmp/bin:$PATH" \
+    PATH="$test_tmp/bin${PATH:+:$PATH}" \
       TERRAFORM_ENV_DIRS="terraform/envs/staging" \
       TERRAFORM_STUB_LOG="$terraform_log" \
       "$repo_root/scripts/validate.sh"
@@ -545,7 +547,7 @@ test_static_mode_skips_environment_init_validate() {
 
   (
     cd "$target"
-    PATH="$test_tmp/bin:$PATH" \
+    PATH="$test_tmp/bin${PATH:+:$PATH}" \
       TERRAFORM_VALIDATE_MODE=static \
       TERRAFORM_STUB_LOG="$terraform_log" \
       "$repo_root/scripts/validate.sh"
@@ -596,7 +598,7 @@ test_checkov_runs_only_when_enabled() {
 
   (
     cd "$target"
-    PATH="$test_tmp/bin:$PATH" \
+    PATH="$test_tmp/bin${PATH:+:$PATH}" \
       CHECKOV_STUB_LOG="$checkov_log" \
       "$repo_root/scripts/validate.sh"
   ) >"$test_tmp/validate-checkov-default.out" 2>&1 || {
@@ -609,7 +611,7 @@ test_checkov_runs_only_when_enabled() {
 
   (
     cd "$target"
-    PATH="$test_tmp/bin:$PATH" \
+    PATH="$test_tmp/bin${PATH:+:$PATH}" \
       TERRAFORM_ENABLE_CHECKOV=1 \
       CHECKOV_STUB_LOG="$checkov_log" \
       "$repo_root/scripts/validate.sh"
@@ -629,7 +631,7 @@ test_tflint_runs_only_when_enabled() {
 
   (
     cd "$target"
-    PATH="$test_tmp/bin:$PATH" \
+    PATH="$test_tmp/bin${PATH:+:$PATH}" \
       TFLINT_STUB_LOG="$tflint_log" \
       "$repo_root/scripts/validate.sh"
   ) >"$test_tmp/validate-tflint-default.out" 2>&1 || {
@@ -642,7 +644,7 @@ test_tflint_runs_only_when_enabled() {
 
   (
     cd "$target"
-    PATH="$test_tmp/bin:$PATH" \
+    PATH="$test_tmp/bin${PATH:+:$PATH}" \
       TERRAFORM_ENABLE_TFLINT=1 \
       TFLINT_STUB_LOG="$tflint_log" \
       "$repo_root/scripts/validate.sh"
@@ -664,7 +666,7 @@ test_tflint_uses_root_config_when_present() {
 
   (
     cd "$target"
-    PATH="$test_tmp/bin:$PATH" \
+    PATH="$test_tmp/bin${PATH:+:$PATH}" \
       TERRAFORM_VALIDATE_MODE=static \
       TERRAFORM_ENABLE_TFLINT=1 \
       TFLINT_STUB_LOG="$tflint_log" \
@@ -782,7 +784,7 @@ test_missing_absolute_terraform_bin_reports_executable_path() {
   set +e
   output=$(
     cd "$target"
-    PATH="$test_tmp/bin:$PATH" \
+    PATH="$test_tmp/bin${PATH:+:$PATH}" \
       TERRAFORM_BIN="$missing_terraform" \
       "$repo_root/scripts/validate.sh" 2>&1
   )
@@ -802,7 +804,7 @@ test_missing_absolute_tflint_bin_reports_executable_path() {
   set +e
   output=$(
     cd "$target"
-    PATH="$test_tmp/bin:$PATH" \
+    PATH="$test_tmp/bin${PATH:+:$PATH}" \
       TERRAFORM_ENABLE_TFLINT=1 \
       TFLINT_BIN="$missing_tflint" \
       "$repo_root/scripts/validate.sh" 2>&1
@@ -823,7 +825,7 @@ test_missing_absolute_checkov_bin_reports_executable_path() {
   set +e
   output=$(
     cd "$target"
-    PATH="$test_tmp/bin:$PATH" \
+    PATH="$test_tmp/bin${PATH:+:$PATH}" \
       TERRAFORM_ENABLE_CHECKOV=1 \
       CHECKOV_BIN="$missing_checkov" \
       "$repo_root/scripts/validate.sh" 2>&1
@@ -846,7 +848,7 @@ test_non_executable_absolute_checkov_bin_reports_executable_path() {
   set +e
   output=$(
     cd "$target"
-    PATH="$test_tmp/bin:$PATH" \
+    PATH="$test_tmp/bin${PATH:+:$PATH}" \
       TERRAFORM_ENABLE_CHECKOV=1 \
       CHECKOV_BIN="$checkov_bin" \
       "$repo_root/scripts/validate.sh" 2>&1
@@ -890,4 +892,4 @@ test_missing_absolute_tflint_bin_reports_executable_path
 test_missing_absolute_checkov_bin_reports_executable_path
 test_non_executable_absolute_checkov_bin_reports_executable_path
 
-echo "ok - validate public-safety validation contract"
+printf '%s\n' "ok - validate public-safety validation contract"

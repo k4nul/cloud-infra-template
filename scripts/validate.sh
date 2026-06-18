@@ -26,7 +26,7 @@ case "$TERRAFORM_VALIDATE_MODE" in
   full | static)
     ;;
   *)
-    echo "Unsupported TERRAFORM_VALIDATE_MODE: $TERRAFORM_VALIDATE_MODE. Use full or static." >&2
+    printf '%s\n' "Unsupported TERRAFORM_VALIDATE_MODE: $TERRAFORM_VALIDATE_MODE. Use full or static." >&2
     exit 1
     ;;
 esac
@@ -41,7 +41,7 @@ ensure_command_available() {
         return 0
       fi
 
-      echo "$command_name not found or not executable. $install_hint" >&2
+      printf '%s\n' "$command_name not found or not executable. $install_hint" >&2
       return 127
       ;;
   esac
@@ -70,13 +70,13 @@ ensure_command_available() {
     return 0
   fi
 
-  echo "$command_name not found. $install_hint" >&2
+  printf '%s\n' "$command_name not found. $install_hint" >&2
   return 127
 }
 
 check_public_safe_files() {
   if ! command -v git >/dev/null 2>&1; then
-    echo "git not found; skipping tracked public-safety file check." >&2
+    printf '%s\n' "git not found; skipping tracked public-safety file check." >&2
     return 0
   fi
 
@@ -109,16 +109,17 @@ check_public_safe_files() {
   )
 
   if [ -n "$violations" ]; then
-    echo "Public-safety validation failed. Remove tracked generated, secret, state, plan, local or cloud credential, or real backend files:" >&2
+    printf '%s\n' "Public-safety validation failed. Remove tracked generated, secret, state, plan, local or cloud credential, or real backend files:" >&2
     printf '%s\n' "$violations" | sed 's/^/  - /' >&2
     return 1
   fi
 }
 
 validate_environment_roots() {
+  # shellcheck disable=SC2086 # TERRAFORM_ENV_DIRS is a space-separated directory list.
   for env_dir in $TERRAFORM_ENV_DIRS; do
     if [ ! -d "$env_dir" ]; then
-      echo "Terraform environment directory not found: $env_dir" >&2
+      printf '%s\n' "Terraform environment directory not found: $env_dir" >&2
       return 1
     fi
 
