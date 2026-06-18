@@ -447,14 +447,18 @@ test_allows_public_examples() {
   target="$test_tmp/allows-public-examples"
   make_target_repo "$target"
 
-  mkdir -p "$target/terraform/envs/dev"
+  mkdir -p "$target/terraform/envs/dev" "$target/services/api"
   touch "$target/config/backend.hcl.example"
   touch "$target/terraform/envs/dev/terraform.tfvars.example"
   touch "$target/.env.example"
+  touch "$target/services/api/.env.example"
 
   (
     cd "$target"
-    git add .env.example config/backend.hcl.example terraform/envs/dev/terraform.tfvars.example
+    git add .env.example \
+      config/backend.hcl.example \
+      services/api/.env.example \
+      terraform/envs/dev/terraform.tfvars.example
   )
 
   run_validation "$target" >"$test_tmp/validate-public-examples.out" 2>&1 || {
@@ -495,7 +499,10 @@ test_rejects_tracked_forbidden_files() {
     "$target/.aws" \
     "$target/.azure" \
     "$target/.config/gcloud" \
-    "$target/nested"
+    "$target/nested" \
+    "$target/services/api/.aws" \
+    "$target/services/api/.azure" \
+    "$target/services/api/.config/gcloud"
   touch "$target/.env"
   touch "$target/.env.local"
   touch "$target/.envrc"
@@ -511,6 +518,8 @@ test_rejects_tracked_forbidden_files() {
   touch "$target/terraform/envs/dev/.terraform/providers/cache.txt"
   touch "$target/terraform/envs/dev/terraform.tfvars"
   touch "$target/terraform/envs/dev/terraform.tfvars.json"
+  touch "$target/terraform/envs/dev/dev.auto.tfvars"
+  touch "$target/terraform/envs/dev/dev.auto.tfvars.json"
   touch "$target/terraform.tfstate"
   touch "$target/terraform.tfstate.backup"
   touch "$target/app.tfplan"
@@ -534,6 +543,11 @@ test_rejects_tracked_forbidden_files() {
   touch "$target/id_ecdsa"
   touch "$target/id_ed25519"
   touch "$target/config/prod.hcl"
+  touch "$target/nested/.env.local"
+  touch "$target/nested/id_rsa"
+  touch "$target/services/api/.aws/credentials"
+  touch "$target/services/api/.azure/azureProfile.json"
+  touch "$target/services/api/.config/gcloud/application_default_credentials.json"
 
   (
     cd "$target"
@@ -563,6 +577,8 @@ test_rejects_tracked_forbidden_files() {
   assert_contains "$output" "terraform/envs/dev/.terraform/providers/cache.txt"
   assert_contains "$output" "terraform/envs/dev/terraform.tfvars"
   assert_contains "$output" "terraform/envs/dev/terraform.tfvars.json"
+  assert_contains "$output" "terraform/envs/dev/dev.auto.tfvars"
+  assert_contains "$output" "terraform/envs/dev/dev.auto.tfvars.json"
   assert_contains "$output" "terraform.tfstate"
   assert_contains "$output" "terraform.tfstate.backup"
   assert_contains "$output" "app.tfplan"
@@ -586,6 +602,46 @@ test_rejects_tracked_forbidden_files() {
   assert_contains "$output" "id_ecdsa"
   assert_contains "$output" "id_ed25519"
   assert_contains "$output" "config/prod.hcl"
+  assert_contains "$output" "nested/.env.local"
+  assert_contains "$output" "nested/id_rsa"
+  assert_contains "$output" "services/api/.aws/credentials"
+  assert_contains "$output" "services/api/.azure/azureProfile.json"
+  assert_contains "$output" "services/api/.config/gcloud/application_default_credentials.json"
+}
+
+test_rejects_only_forbidden_files_when_public_examples_are_tracked() {
+  target="$test_tmp/rejects-only-forbidden-with-examples"
+  make_target_repo "$target"
+
+  mkdir -p "$target/terraform/envs/dev" "$target/services/api"
+  touch "$target/config/backend.hcl.example"
+  touch "$target/config/prod.hcl"
+  touch "$target/terraform/envs/dev/terraform.tfvars.example"
+  touch "$target/terraform/envs/dev/terraform.tfvars"
+  touch "$target/.env.example"
+  touch "$target/.env"
+  touch "$target/services/api/.env.example"
+
+  (
+    cd "$target"
+    git add .
+  )
+
+  set +e
+  output=$(run_validation "$target" 2>&1)
+  status=$?
+  set -e
+
+  [ "$status" -ne 0 ] || fail "expected tracked forbidden files to fail validation"
+
+  assert_contains "$output" "Public-safety validation failed."
+  assert_contains "$output" "config/prod.hcl"
+  assert_contains "$output" "terraform/envs/dev/terraform.tfvars"
+  assert_contains "$output" ".env"
+  assert_not_contains "$output" "config/backend.hcl.example"
+  assert_not_contains "$output" "terraform/envs/dev/terraform.tfvars.example"
+  assert_not_contains "$output" ".env.example"
+  assert_not_contains "$output" "services/api/.env.example"
 }
 
 test_default_matrix_runs_all_environment_roots() {
@@ -974,6 +1030,7 @@ test_ci_workflow_contract_rejects_cloud_credential_env
 test_allows_public_examples
 test_ignores_untracked_forbidden_files
 test_rejects_tracked_forbidden_files
+test_rejects_only_forbidden_files_when_public_examples_are_tracked
 test_default_matrix_runs_all_environment_roots
 test_custom_matrix_limits_environment_roots
 test_static_mode_skips_environment_init_validate
