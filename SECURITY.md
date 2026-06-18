@@ -17,8 +17,12 @@ state data, credentials, or real infrastructure details in a public issue.
 Never commit:
 
 - Terraform state or plan files
+- generated `.terraform/` directories, provider lockfiles, or TFLint plugin
+  cache directories
 - real `.tfvars`
-- local env files, Terraform CLI credentials, cloud CLI credentials, or crash logs
-- backend config containing bucket names or credentials
+- local env files, Terraform CLI credentials, cloud CLI credential directories,
+  or crash logs
+- real backend config under `config/*.hcl`; only `config/backend.hcl.example`
+  belongs in the public template
 - cloud account IDs, access keys, private keys, or tokens
 - production hostnames or internal CIDR maps unless they are intentionally public

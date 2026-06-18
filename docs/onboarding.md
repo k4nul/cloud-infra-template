@@ -52,6 +52,13 @@ terraform init -backend=false
 terraform plan -var-file=terraform.tfvars.example
 ```
 
+This manual plan path is for operator inspection. It disables remote backend
+initialization, but it can still require normal AWS provider download access and
+AWS credential context because the environment root configures the AWS provider.
+Use `./scripts/validate.sh` for the public-safe validation lane, or
+`TERRAFORM_VALIDATE_MODE=static ./scripts/validate.sh` when provider registry
+access is unavailable.
+
 The checked-in examples are intentionally safe to publish. They keep
 `ingress_cidrs = []` and `allow_public_ingress = false`, so the workload security
 group starts with no inbound workload rule. If a consumer needs inbound access,
