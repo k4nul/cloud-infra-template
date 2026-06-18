@@ -61,6 +61,27 @@ The `.gitignore` already ignores these local operator files. If one appears in
 validation output, it was force-added or committed before the ignore rule was in
 place.
 
+## CI Workflow Contract Failed
+
+`./scripts/validate-ci-workflow.sh` fails when the GitHub Actions workflow drifts
+away from the public-safe validation lane. Keep the workflow on
+`pull_request`, `push` to `main`, and `workflow_dispatch`; do not add
+`pull_request_target` or pull-request path filters.
+
+Common fixes:
+
+- Keep `permissions` only at the workflow top level with `contents: read`.
+- Remove job-level `permissions` overrides, especially `contents: write` or
+  `id-token`.
+- Set `persist-credentials: false` on every `actions/checkout` step.
+- Remove `${{ secrets... }}` references, including bracket syntax such as
+  `${{ secrets["NAME"] }}`.
+- Remove cloud credential actions and environment variables such as
+  `AWS_ACCESS_KEY_ID`, `GOOGLE_APPLICATION_CREDENTIALS`, `AZURE_CLIENT_SECRET`,
+  or `ARM_CLIENT_SECRET`.
+- Keep `TERRAFORM_ENABLE_TFLINT=0` and `TERRAFORM_ENABLE_CHECKOV=0` in public CI
+  unless the scanner installation and safety contract are changed together.
+
 ## Terraform Formatting Failed
 
 Run the formatter, then rerun the check:

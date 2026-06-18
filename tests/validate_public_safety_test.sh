@@ -270,6 +270,31 @@ test_ci_workflow_contract_rejects_secret_usage() {
   assert_contains "$output" "must not reference repository secrets"
 }
 
+test_ci_workflow_contract_rejects_bracket_secret_usage() {
+  workflow_file="$test_tmp/terraform-validate-bracket-secrets.yml"
+
+  awk '
+    /^          persist-credentials: false[[:space:]]*$/ {
+      print
+      print ""
+      print "      - name: Read token"
+      print "        env:"
+      print "          TEMPLATE_TOKEN: ${{ secrets[\"TEMPLATE_TOKEN\"] }}"
+      print "        run: true"
+      next
+    }
+    { print }
+  ' "$repo_root/.github/workflows/terraform-validate.yml" >"$workflow_file"
+
+  set +e
+  output=$(run_ci_workflow_validation "$workflow_file" 2>&1)
+  status=$?
+  set -e
+
+  [ "$status" -ne 0 ] || fail "expected bracket secret usage to fail CI workflow validation"
+  assert_contains "$output" "must not reference repository secrets"
+}
+
 test_ci_workflow_contract_rejects_write_permissions() {
   workflow_file="$test_tmp/terraform-validate-write-permissions.yml"
 
@@ -312,6 +337,28 @@ test_ci_workflow_contract_rejects_id_token_permissions() {
   assert_contains "$output" "workflow must not request id-token permissions"
 }
 
+test_ci_workflow_contract_rejects_job_permission_override() {
+  workflow_file="$test_tmp/terraform-validate-job-permissions.yml"
+
+  awk '
+    /^  validate:[[:space:]]*$/ {
+      print
+      print "    permissions:"
+      print "      contents: write"
+      next
+    }
+    { print }
+  ' "$repo_root/.github/workflows/terraform-validate.yml" >"$workflow_file"
+
+  set +e
+  output=$(run_ci_workflow_validation "$workflow_file" 2>&1)
+  status=$?
+  set -e
+
+  [ "$status" -ne 0 ] || fail "expected job-level permissions to fail CI workflow validation"
+  assert_contains "$output" "workflow must not override permissions below the top level"
+}
+
 test_ci_workflow_contract_rejects_persisted_checkout_credentials() {
   workflow_file="$test_tmp/terraform-validate-persisted-checkout.yml"
 
@@ -325,6 +372,28 @@ test_ci_workflow_contract_rejects_persisted_checkout_credentials() {
 
   [ "$status" -ne 0 ] || fail "expected persisted checkout credentials to fail CI workflow validation"
   assert_contains "$output" "checkout credentials must not be persisted"
+}
+
+test_ci_workflow_contract_rejects_checkout_missing_persist_false() {
+  workflow_file="$test_tmp/terraform-validate-extra-checkout.yml"
+
+  awk '
+    /^      - name: Validate CI workflow contract[[:space:]]*$/ {
+      print "      - uses: actions/checkout@v4"
+      print ""
+      print
+      next
+    }
+    { print }
+  ' "$repo_root/.github/workflows/terraform-validate.yml" >"$workflow_file"
+
+  set +e
+  output=$(run_ci_workflow_validation "$workflow_file" 2>&1)
+  status=$?
+  set -e
+
+  [ "$status" -ne 0 ] || fail "expected checkout without persist-credentials false to fail CI workflow validation"
+  assert_contains "$output" "every checkout step must set persist-credentials: false"
 }
 
 test_ci_workflow_contract_rejects_cloud_credential_action() {
@@ -347,6 +416,31 @@ test_ci_workflow_contract_rejects_cloud_credential_action() {
 
   [ "$status" -ne 0 ] || fail "expected cloud credential action to fail CI workflow validation"
   assert_contains "$output" "public validation workflow must not configure cloud credentials"
+}
+
+test_ci_workflow_contract_rejects_cloud_credential_env() {
+  workflow_file="$test_tmp/terraform-validate-cloud-env.yml"
+
+  awk '
+    /^      - name: Validate CI workflow contract[[:space:]]*$/ {
+      print "      - name: Set cloud credentials"
+      print "        env:"
+      print "          AWS_ACCESS_KEY_ID: example"
+      print "        run: true"
+      print ""
+      print
+      next
+    }
+    { print }
+  ' "$repo_root/.github/workflows/terraform-validate.yml" >"$workflow_file"
+
+  set +e
+  output=$(run_ci_workflow_validation "$workflow_file" 2>&1)
+  status=$?
+  set -e
+
+  [ "$status" -ne 0 ] || fail "expected cloud credential environment variable to fail CI workflow validation"
+  assert_contains "$output" "public validation workflow must not set cloud credential environment variables"
 }
 
 test_allows_public_examples() {
@@ -869,10 +963,14 @@ test_ci_workflow_contract_accepts_repository_workflow
 test_ci_workflow_contract_rejects_pull_request_path_filters
 test_ci_workflow_contract_rejects_pull_request_target
 test_ci_workflow_contract_rejects_secret_usage
+test_ci_workflow_contract_rejects_bracket_secret_usage
 test_ci_workflow_contract_rejects_write_permissions
 test_ci_workflow_contract_rejects_id_token_permissions
+test_ci_workflow_contract_rejects_job_permission_override
 test_ci_workflow_contract_rejects_persisted_checkout_credentials
+test_ci_workflow_contract_rejects_checkout_missing_persist_false
 test_ci_workflow_contract_rejects_cloud_credential_action
+test_ci_workflow_contract_rejects_cloud_credential_env
 test_allows_public_examples
 test_ignores_untracked_forbidden_files
 test_rejects_tracked_forbidden_files

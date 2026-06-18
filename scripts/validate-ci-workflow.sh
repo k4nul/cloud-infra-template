@@ -89,6 +89,34 @@ assert_order() {
   fi
 }
 
+assert_all_checkout_steps_disable_credentials() {
+  awk '
+    function finish_step() {
+      if (checkout_seen && !persist_false_seen) {
+        exit 1
+      }
+      checkout_seen = 0
+      persist_false_seen = 0
+    }
+
+    /^[[:space:]]{6}-[[:space:]]/ {
+      finish_step()
+    }
+
+    /^[[:space:]]+(-[[:space:]]+)?uses:[[:space:]]*actions\/checkout@/ {
+      checkout_seen = 1
+    }
+
+    checkout_seen && /^[[:space:]]+persist-credentials:[[:space:]]*false[[:space:]]*$/ {
+      persist_false_seen = 1
+    }
+
+    END {
+      finish_step()
+    }
+  ' "$workflow_file" || fail "every checkout step must set persist-credentials: false"
+}
+
 assert_line '^name:[[:space:]]*Terraform validation[[:space:]]*$' \
   "workflow must be the Terraform validation workflow"
 assert_line '^on:[[:space:]]*$' \
@@ -104,12 +132,16 @@ assert_line '^[[:space:]]{2}workflow_dispatch:[[:space:]]*$' \
 assert_line '^[[:space:]]{6}- main[[:space:]]*$' \
   "push trigger must include the main branch"
 
-assert_absent '\$\{\{[[:space:]]*secrets\.' \
+assert_absent '\$\{\{[[:space:]]*secrets([^A-Za-z0-9_]|$)' \
   "public validation workflow must not reference repository secrets"
-assert_absent 'aws-actions/configure-aws-credentials' \
+assert_absent 'aws-actions/configure-aws-credentials|azure/login|google-github-actions/auth' \
   "public validation workflow must not configure cloud credentials"
+assert_absent '^[[:space:]]+(AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|AWS_PROFILE|GOOGLE_APPLICATION_CREDENTIALS|GOOGLE_CREDENTIALS|AZURE_CLIENT_ID|AZURE_CLIENT_SECRET|AZURE_TENANT_ID|ARM_CLIENT_ID|ARM_CLIENT_SECRET|ARM_TENANT_ID|ARM_SUBSCRIPTION_ID):' \
+  "public validation workflow must not set cloud credential environment variables"
 assert_absent 'persist-credentials:[[:space:]]*true[[:space:]]*$' \
   "checkout credentials must not be persisted"
+assert_absent '^[[:space:]]+permissions:[[:space:]]*' \
+  "workflow must not override permissions below the top level"
 
 pull_request_block=$(extract_event_block pull_request)
 if printf '%s\n' "$pull_request_block" | grep -Eq '^[[:space:]]{4}(paths|paths-ignore):[[:space:]]*$'; then
@@ -145,6 +177,7 @@ assert_line '^[[:space:]]{8}uses:[[:space:]]*actions/checkout@v4[[:space:]]*$' \
   "workflow must use actions/checkout@v4"
 assert_line '^[[:space:]]{10}persist-credentials:[[:space:]]*false[[:space:]]*$' \
   "checkout must set persist-credentials: false"
+assert_all_checkout_steps_disable_credentials
 assert_line '^[[:space:]]{6}- name:[[:space:]]*Validate CI workflow contract[[:space:]]*$' \
   "workflow must validate its own CI contract"
 assert_line '^[[:space:]]{8}run:[[:space:]]*\./scripts/validate-ci-workflow\.sh[[:space:]]*$' \
