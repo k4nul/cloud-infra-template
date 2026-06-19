@@ -76,9 +76,11 @@ Common fixes:
 - Set `persist-credentials: false` on every `actions/checkout` step.
 - Remove `${{ secrets... }}` references, including bracket syntax such as
   `${{ secrets["NAME"] }}`.
-- Remove cloud credential actions and environment variables such as
-  `AWS_ACCESS_KEY_ID`, `GOOGLE_APPLICATION_CREDENTIALS`, `AZURE_CLIENT_SECRET`,
-  or `ARM_CLIENT_SECRET`.
+- Remove cloud credential actions and credential environment variables,
+  including inline YAML maps with quoted or unquoted keys such as
+  `AWS_ACCESS_KEY_ID`,
+  `AWS_SHARED_CREDENTIALS_FILE`, `GOOGLE_APPLICATION_CREDENTIALS`,
+  `AZURE_CLIENT_SECRET`, or `ARM_CLIENT_SECRET`.
 - Keep `TERRAFORM_ENABLE_TFLINT=0` and `TERRAFORM_ENABLE_CHECKOV=0` in public CI
   unless the scanner installation and safety contract are changed together.
 

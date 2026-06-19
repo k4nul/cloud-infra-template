@@ -136,7 +136,7 @@ assert_absent '\$\{\{[[:space:]]*secrets([^A-Za-z0-9_]|$)' \
   "public validation workflow must not reference repository secrets"
 assert_absent 'aws-actions/configure-aws-credentials|azure/login|google-github-actions/auth' \
   "public validation workflow must not configure cloud credentials"
-assert_absent '^[[:space:]]+(AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|AWS_PROFILE|GOOGLE_APPLICATION_CREDENTIALS|GOOGLE_CREDENTIALS|AZURE_CLIENT_ID|AZURE_CLIENT_SECRET|AZURE_TENANT_ID|ARM_CLIENT_ID|ARM_CLIENT_SECRET|ARM_TENANT_ID|ARM_SUBSCRIPTION_ID):' \
+assert_absent "(^|[,{[:space:]])[\"']?(AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|AWS_PROFILE|AWS_SHARED_CREDENTIALS_FILE|AWS_CONFIG_FILE|GOOGLE_APPLICATION_CREDENTIALS|GOOGLE_CREDENTIALS|CLOUDSDK_CONFIG|AZURE_CLIENT_ID|AZURE_CLIENT_SECRET|AZURE_TENANT_ID|AZURE_SUBSCRIPTION_ID|ARM_CLIENT_ID|ARM_CLIENT_SECRET|ARM_TENANT_ID|ARM_SUBSCRIPTION_ID)[\"']?[[:space:]]*:" \
   "public validation workflow must not set cloud credential environment variables"
 assert_absent 'persist-credentials:[[:space:]]*true[[:space:]]*$' \
   "checkout credentials must not be persisted"

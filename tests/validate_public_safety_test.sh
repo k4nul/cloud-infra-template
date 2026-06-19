@@ -443,6 +443,78 @@ test_ci_workflow_contract_rejects_cloud_credential_env() {
   assert_contains "$output" "public validation workflow must not set cloud credential environment variables"
 }
 
+test_ci_workflow_contract_rejects_inline_cloud_credential_env() {
+  workflow_file="$test_tmp/terraform-validate-inline-cloud-env.yml"
+
+  awk '
+    /^      - name: Validate CI workflow contract[[:space:]]*$/ {
+      print "      - name: Set inline cloud credentials"
+      print "        env: { AWS_SHARED_CREDENTIALS_FILE: /tmp/credentials }"
+      print "        run: true"
+      print ""
+      print
+      next
+    }
+    { print }
+  ' "$repo_root/.github/workflows/terraform-validate.yml" >"$workflow_file"
+
+  set +e
+  output=$(run_ci_workflow_validation "$workflow_file" 2>&1)
+  status=$?
+  set -e
+
+  [ "$status" -ne 0 ] || fail "expected inline cloud credential environment variable to fail CI workflow validation"
+  assert_contains "$output" "public validation workflow must not set cloud credential environment variables"
+}
+
+test_ci_workflow_contract_rejects_quoted_inline_cloud_credential_env() {
+  workflow_file="$test_tmp/terraform-validate-quoted-inline-cloud-env.yml"
+
+  awk '
+    /^      - name: Validate CI workflow contract[[:space:]]*$/ {
+      print "      - name: Set quoted inline cloud credentials"
+      print "        env: { \"AWS_ACCESS_KEY_ID\": example }"
+      print "        run: true"
+      print ""
+      print
+      next
+    }
+    { print }
+  ' "$repo_root/.github/workflows/terraform-validate.yml" >"$workflow_file"
+
+  set +e
+  output=$(run_ci_workflow_validation "$workflow_file" 2>&1)
+  status=$?
+  set -e
+
+  [ "$status" -ne 0 ] || fail "expected quoted inline cloud credential environment variable to fail CI workflow validation"
+  assert_contains "$output" "public validation workflow must not set cloud credential environment variables"
+}
+
+test_ci_workflow_contract_rejects_single_quoted_inline_cloud_credential_env() {
+  workflow_file="$test_tmp/terraform-validate-single-quoted-inline-cloud-env.yml"
+
+  awk '
+    /^      - name: Validate CI workflow contract[[:space:]]*$/ {
+      print "      - name: Set single-quoted inline cloud credentials"
+      print "        env: { \047AWS_SECRET_ACCESS_KEY\047: example }"
+      print "        run: true"
+      print ""
+      print
+      next
+    }
+    { print }
+  ' "$repo_root/.github/workflows/terraform-validate.yml" >"$workflow_file"
+
+  set +e
+  output=$(run_ci_workflow_validation "$workflow_file" 2>&1)
+  status=$?
+  set -e
+
+  [ "$status" -ne 0 ] || fail "expected single-quoted inline cloud credential environment variable to fail CI workflow validation"
+  assert_contains "$output" "public validation workflow must not set cloud credential environment variables"
+}
+
 test_allows_public_examples() {
   target="$test_tmp/allows-public-examples"
   make_target_repo "$target"
@@ -1027,6 +1099,9 @@ test_ci_workflow_contract_rejects_persisted_checkout_credentials
 test_ci_workflow_contract_rejects_checkout_missing_persist_false
 test_ci_workflow_contract_rejects_cloud_credential_action
 test_ci_workflow_contract_rejects_cloud_credential_env
+test_ci_workflow_contract_rejects_inline_cloud_credential_env
+test_ci_workflow_contract_rejects_quoted_inline_cloud_credential_env
+test_ci_workflow_contract_rejects_single_quoted_inline_cloud_credential_env
 test_allows_public_examples
 test_ignores_untracked_forbidden_files
 test_rejects_tracked_forbidden_files

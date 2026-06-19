@@ -98,8 +98,9 @@ TERRAFORM_ENV_DIRS="terraform/envs/dev" ./scripts/validate.sh
 `./scripts/validate-ci-workflow.sh` verifies that the committed GitHub Actions
 workflow still uses public-safe triggers, top-level read-only permissions with
 no job-level overrides, no repository secret references, no cloud credential
-actions or environment variables, no persisted checkout credentials on any
-checkout step, pinned Terraform setup, and the expected validation steps.
+actions or credential environment variables including inline YAML maps with
+quoted or unquoted keys, no persisted checkout credentials on any checkout step,
+pinned Terraform setup, and the expected validation steps.
 
 `./tests/validate_public_safety_test.sh` covers the validation wrapper behavior
 around the tracked-file gate, the default matrix, custom `TERRAFORM_ENV_DIRS`,

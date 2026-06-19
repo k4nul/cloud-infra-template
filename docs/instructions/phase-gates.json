@@ -1,11 +1,11 @@
 {
   "schema_version": "1.1.0",
   "project": "devops/cloud-infra-template",
-  "current_phase": "template-maintenance",
+  "current_phase": "template-maintenance-complete",
   "next_phase": "",
   "transition": {
-    "intent": "Keep the public Terraform template in template-maintenance after the optional provider-aware TFLint baseline is documented, remains opt-in, and static validation proves the public-safe lane without provider downloads.",
-    "mode": "template-maintenance-no-pending-transition",
+    "intent": "Close recurring automation for the public Terraform template after maintenance gates are complete, no next template scope is selected, and static validation proves the public-safe lane without provider downloads.",
+    "mode": "template-maintenance-complete-no-pending-transition",
     "validation_command": "./scripts/validate.sh",
     "transition_validation_command": "",
     "phase_update_files": [
@@ -96,6 +96,23 @@
         "optional TFLint lane is documented",
         "minimal backend-disabled validation still passes without TFLint",
         "validation contract tests cover opt-in behavior"
+      ]
+    },
+    {
+      "id": "template-maintenance-complete",
+      "purpose": "Hold the completed public Terraform template until a new explicit template scope is selected.",
+      "allowed_work": [
+        "maintenance-audit",
+        "security-review",
+        "docs-update"
+      ],
+      "blocked_work": [
+        "new infrastructure scope without an explicit phase",
+        "routine automation without new progress-scored scope"
+      ],
+      "exit_criteria": [
+        "new template scope is selected",
+        "next_phase and transition_validation_command are defined"
       ]
     }
   ],

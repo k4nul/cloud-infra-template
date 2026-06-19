@@ -59,8 +59,9 @@ CI first verifies that the workflow still matches the public-safe contract:
 That check rejects `pull_request_target`, pull-request path filters, repository
 secret references including alternate secret-context syntax, persisted checkout
 credentials on every checkout step, job-level permission overrides, cloud
-credential setup actions or environment variables, missing scanner opt-out flags,
-Terraform version drift, and a missing public validation step.
+credential setup actions or credential environment variables including inline
+YAML maps with quoted or unquoted keys, missing scanner opt-out flags, Terraform
+version drift, and a missing public validation step.
 
 CI then runs the validation contract test:
 
