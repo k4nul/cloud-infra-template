@@ -787,6 +787,57 @@ test_static_mode_skips_environment_init_validate() {
   assert_not_contains "$terraform_calls" "-chdir=terraform/envs/prod init"
 }
 
+test_unsupported_validation_mode_fails_before_terraform_lookup() {
+  target="$test_tmp/unsupported-validation-mode"
+  make_target_repo "$target"
+
+  set +e
+  output=$(
+    cd "$target"
+    PATH="/usr/bin:/bin" \
+      TERRAFORM_VALIDATE_MODE=remote \
+      "$repo_root/scripts/validate.sh" 2>&1
+  )
+  status=$?
+  set -e
+
+  [ "$status" -eq 1 ] || fail "expected unsupported validation mode to exit 1"
+  assert_contains "$output" "Unsupported TERRAFORM_VALIDATE_MODE: remote. Use full or static."
+  assert_not_contains "$output" "terraform not found"
+}
+
+test_static_mode_still_runs_optional_policy_scans() {
+  target="$test_tmp/static-mode-policy-scans"
+  make_target_repo "$target"
+  terraform_log="$test_tmp/static-mode-policy-scans-terraform.log"
+  checkov_log="$test_tmp/static-mode-policy-scans-checkov.log"
+  tflint_log="$test_tmp/static-mode-policy-scans-tflint.log"
+
+  (
+    cd "$target"
+    PATH="$test_tmp/bin${PATH:+:$PATH}" \
+      TERRAFORM_VALIDATE_MODE=static \
+      TERRAFORM_ENABLE_CHECKOV=1 \
+      TERRAFORM_ENABLE_TFLINT=1 \
+      TERRAFORM_STUB_LOG="$terraform_log" \
+      CHECKOV_STUB_LOG="$checkov_log" \
+      TFLINT_STUB_LOG="$tflint_log" \
+      "$repo_root/scripts/validate.sh"
+  ) >"$test_tmp/validate-static-mode-policy-scans.out" 2>&1 || {
+    output=$(cat "$test_tmp/validate-static-mode-policy-scans.out")
+    fail "expected static mode with optional policy scans to pass, got: $output"
+  }
+
+  terraform_calls=$(cat "$terraform_log")
+  checkov_calls=$(cat "$checkov_log")
+  tflint_calls=$(cat "$tflint_log")
+
+  assert_contains "$terraform_calls" "fmt -check -recursive terraform"
+  assert_not_contains "$terraform_calls" "-chdir=terraform/envs/dev init"
+  assert_contains "$checkov_calls" "-d terraform --quiet"
+  assert_contains "$tflint_calls" "--recursive --chdir=terraform"
+}
+
 test_public_examples_are_format_checked_as_hcl() {
   target="$test_tmp/public-example-format"
   make_target_repo "$target"
@@ -1109,6 +1160,8 @@ test_rejects_only_forbidden_files_when_public_examples_are_tracked
 test_default_matrix_runs_all_environment_roots
 test_custom_matrix_limits_environment_roots
 test_static_mode_skips_environment_init_validate
+test_unsupported_validation_mode_fails_before_terraform_lookup
+test_static_mode_still_runs_optional_policy_scans
 test_public_examples_are_format_checked_as_hcl
 test_checkov_runs_only_when_enabled
 test_tflint_runs_only_when_enabled
