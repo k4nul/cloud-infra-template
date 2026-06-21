@@ -45,6 +45,33 @@ assert_not_contains() {
   esac
 }
 
+assert_git_ignores_path() {
+  ignored_path=$1
+
+  (
+    cd "$repo_root"
+    git check-ignore -q -- "$ignored_path"
+  ) || fail "expected .gitignore to ignore: $ignored_path"
+}
+
+assert_git_allows_path() {
+  allowed_path=$1
+
+  set +e
+  (
+    cd "$repo_root"
+    git check-ignore -q -- "$allowed_path"
+  )
+  status=$?
+  set -e
+
+  case "$status" in
+    0) fail "expected .gitignore to allow: $allowed_path" ;;
+    1) ;;
+    *) fail "git check-ignore failed for allowed path: $allowed_path" ;;
+  esac
+}
+
 make_terraform_stub() {
   mkdir -p "$test_tmp/bin"
   cat >"$test_tmp/bin/terraform" <<'STUB'
@@ -513,6 +540,79 @@ test_ci_workflow_contract_rejects_single_quoted_inline_cloud_credential_env() {
 
   [ "$status" -ne 0 ] || fail "expected single-quoted inline cloud credential environment variable to fail CI workflow validation"
   assert_contains "$output" "public validation workflow must not set cloud credential environment variables"
+}
+
+test_gitignore_blocks_public_safety_artifacts() {
+  for ignored_path in \
+    ".terraform.lock.hcl" \
+    ".terraformrc" \
+    "terraform.rc" \
+    ".terraform.d/credentials.tfrc.json" \
+    ".tflint.d/plugins/cache.txt" \
+    ".aws/credentials" \
+    ".azure/azureProfile.json" \
+    ".config/gcloud/application_default_credentials.json" \
+    "terraform/envs/dev/.terraform/providers/cache.txt" \
+    "terraform/envs/dev/terraform.tfvars" \
+    "terraform/envs/dev/terraform.tfvars.json" \
+    "terraform/envs/dev/dev.auto.tfvars" \
+    "terraform/envs/dev/dev.auto.tfvars.json" \
+    "terraform.tfstate" \
+    "terraform.tfstate.backup" \
+    "app.tfplan" \
+    "app.tfplan.json" \
+    "app.plan" \
+    "app.plan.json" \
+    "plan-dev.out" \
+    "plan-dev.json" \
+    "crash.log" \
+    "crash.123.log" \
+    ".env" \
+    ".env.local" \
+    ".envrc" \
+    "secret.pem" \
+    "secret.key" \
+    "secret.p12" \
+    "secret.pfx" \
+    "secret.p8" \
+    "secret.jks" \
+    "secret.keystore" \
+    "id_rsa" \
+    "id_dsa" \
+    "id_ecdsa" \
+    "id_ed25519" \
+    "config/prod.hcl"
+  do
+    assert_git_ignores_path "$ignored_path"
+  done
+}
+
+test_gitignore_blocks_nested_public_safety_artifacts() {
+  for ignored_path in \
+    "nested/.terraform/providers/cache.txt" \
+    "nested/.terraform.d/credentials.tfrc.json" \
+    "nested/.tflint.d/plugins/cache.txt" \
+    "nested/.aws/credentials" \
+    "nested/.azure/azureProfile.json" \
+    "nested/.env.local" \
+    "nested/id_rsa" \
+    "nested/plan-prod.out" \
+    "services/api/.aws/credentials" \
+    "services/api/.azure/azureProfile.json"
+  do
+    assert_git_ignores_path "$ignored_path"
+  done
+}
+
+test_gitignore_allows_public_examples() {
+  for allowed_path in \
+    "config/backend.hcl.example" \
+    "terraform/envs/dev/terraform.tfvars.example" \
+    ".env.example" \
+    "services/api/.env.example"
+  do
+    assert_git_allows_path "$allowed_path"
+  done
 }
 
 test_allows_public_examples() {
@@ -1153,6 +1253,9 @@ test_ci_workflow_contract_rejects_cloud_credential_env
 test_ci_workflow_contract_rejects_inline_cloud_credential_env
 test_ci_workflow_contract_rejects_quoted_inline_cloud_credential_env
 test_ci_workflow_contract_rejects_single_quoted_inline_cloud_credential_env
+test_gitignore_blocks_public_safety_artifacts
+test_gitignore_blocks_nested_public_safety_artifacts
+test_gitignore_allows_public_examples
 test_allows_public_examples
 test_ignores_untracked_forbidden_files
 test_rejects_tracked_forbidden_files
