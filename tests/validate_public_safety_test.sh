@@ -590,15 +590,22 @@ test_gitignore_blocks_public_safety_artifacts() {
 test_gitignore_blocks_nested_public_safety_artifacts() {
   for ignored_path in \
     "nested/.terraform/providers/cache.txt" \
+    "nested/.terraform.lock.hcl" \
+    "nested/.terraformrc" \
+    "nested/terraform.rc" \
     "nested/.terraform.d/credentials.tfrc.json" \
     "nested/.tflint.d/plugins/cache.txt" \
     "nested/.aws/credentials" \
     "nested/.azure/azureProfile.json" \
     "nested/.env.local" \
+    "nested/.envrc" \
+    "nested/secret.pem" \
     "nested/id_rsa" \
+    "nested/id_ed25519" \
     "nested/plan-prod.out" \
     "services/api/.aws/credentials" \
-    "services/api/.azure/azureProfile.json"
+    "services/api/.azure/azureProfile.json" \
+    "services/api/.envrc"
   do
     assert_git_ignores_path "$ignored_path"
   done
@@ -672,6 +679,10 @@ test_rejects_tracked_forbidden_files() {
     "$target/.azure" \
     "$target/.config/gcloud" \
     "$target/nested" \
+    "$target/nested/.terraform" \
+    "$target/nested/.terraform.d" \
+    "$target/nested/.tflint.d/plugins" \
+    "$target/nested/.config/gcloud" \
     "$target/services/api/.aws" \
     "$target/services/api/.azure" \
     "$target/services/api/.config/gcloud"
@@ -701,6 +712,15 @@ test_rejects_tracked_forbidden_files() {
   touch "$target/plan-dev.out"
   touch "$target/plan-dev.json"
   touch "$target/nested/plan-prod.out"
+  touch "$target/nested/.terraform/providers-cache.txt"
+  touch "$target/nested/.terraform.lock.hcl"
+  touch "$target/nested/.terraformrc"
+  touch "$target/nested/terraform.rc"
+  touch "$target/nested/.terraform.d/credentials.tfrc.json"
+  touch "$target/nested/.tflint.d/plugins/cache.txt"
+  touch "$target/nested/.config/gcloud/application_default_credentials.json"
+  touch "$target/nested/.envrc"
+  touch "$target/nested/secret.pem"
   touch "$target/crash.log"
   touch "$target/crash.123.log"
   touch "$target/secret.pem"
@@ -760,6 +780,15 @@ test_rejects_tracked_forbidden_files() {
   assert_contains "$output" "plan-dev.out"
   assert_contains "$output" "plan-dev.json"
   assert_contains "$output" "nested/plan-prod.out"
+  assert_contains "$output" "nested/.terraform/providers-cache.txt"
+  assert_contains "$output" "nested/.terraform.lock.hcl"
+  assert_contains "$output" "nested/.terraformrc"
+  assert_contains "$output" "nested/terraform.rc"
+  assert_contains "$output" "nested/.terraform.d/credentials.tfrc.json"
+  assert_contains "$output" "nested/.tflint.d/plugins/cache.txt"
+  assert_contains "$output" "nested/.config/gcloud/application_default_credentials.json"
+  assert_contains "$output" "nested/.envrc"
+  assert_contains "$output" "nested/secret.pem"
   assert_contains "$output" "crash.log"
   assert_contains "$output" "crash.123.log"
   assert_contains "$output" "secret.pem"
