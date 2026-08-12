@@ -73,69 +73,40 @@ assert_git_allows_path() {
 }
 
 make_terraform_stub() {
-  mkdir -p "$test_tmp/bin"
-  cat >"$test_tmp/bin/terraform" <<'STUB'
-#!/usr/bin/env sh
-set -eu
-
-if [ -n "${TERRAFORM_STUB_LOG:-}" ]; then
-  printf '%s\n' "$*" >>"$TERRAFORM_STUB_LOG"
-fi
-
-case "${1:-}" in
-  -chdir=*)
-    shift
-    ;;
-esac
-
-case "${1:-}" in
-  fmt | init | validate)
-    exit 0
-    ;;
-  *)
-    printf '%s\n' "unexpected terraform command: $*" >&2
-    exit 2
-    ;;
-esac
-STUB
-  chmod +x "$test_tmp/bin/terraform"
+  make_terraform_command_stub "$test_tmp/bin/terraform"
 }
 
 make_checkov_stub() {
-  mkdir -p "$test_tmp/bin"
-  cat >"$test_tmp/bin/checkov" <<'STUB'
-#!/usr/bin/env sh
-set -eu
-
-if [ -n "${CHECKOV_STUB_LOG:-}" ]; then
-  printf '%s\n' "$*" >>"$CHECKOV_STUB_LOG"
-fi
-
-exit 0
-STUB
-  chmod +x "$test_tmp/bin/checkov"
+  make_passthrough_command_stub "$test_tmp/bin/checkov" CHECKOV_STUB_LOG
 }
 
 make_tflint_stub() {
-  mkdir -p "$test_tmp/bin"
-  cat >"$test_tmp/bin/tflint" <<'STUB'
-#!/usr/bin/env sh
-set -eu
-
-if [ -n "${TFLINT_STUB_LOG:-}" ]; then
-  printf '%s\n' "$*" >>"$TFLINT_STUB_LOG"
-fi
-
-exit 0
-STUB
-  chmod +x "$test_tmp/bin/tflint"
+  make_passthrough_command_stub "$test_tmp/bin/tflint" TFLINT_STUB_LOG
 }
 
 make_home_terraform_stub() {
   home_dir=$1
 
-  mkdir -p "$home_dir/.local/bin"
-  cat >"$home_dir/.local/bin/terraform" <<'STUB'
+  make_terraform_command_stub "$home_dir/.local/bin/terraform"
+}
+
+make_home_checkov_stub() {
+  home_dir=$1
+
+  make_passthrough_command_stub "$home_dir/bin/checkov" CHECKOV_STUB_LOG
+}
+
+make_home_tflint_stub() {
+  home_dir=$1
+
+  make_passthrough_command_stub "$home_dir/bin/tflint" TFLINT_STUB_LOG
+}
+
+make_terraform_command_stub() {
+  stub_path=$1
+
+  mkdir -p "$(dirname "$stub_path")"
+  cat >"$stub_path" <<'STUB'
 #!/usr/bin/env sh
 set -eu
 
@@ -159,41 +130,25 @@ case "${1:-}" in
     ;;
 esac
 STUB
-  chmod +x "$home_dir/.local/bin/terraform"
+  chmod +x "$stub_path"
 }
 
-make_home_checkov_stub() {
-  home_dir=$1
+make_passthrough_command_stub() {
+  stub_path=$1
+  log_variable=$2
 
-  mkdir -p "$home_dir/bin"
-  cat >"$home_dir/bin/checkov" <<'STUB'
+  mkdir -p "$(dirname "$stub_path")"
+  cat >"$stub_path" <<STUB
 #!/usr/bin/env sh
 set -eu
 
-if [ -n "${CHECKOV_STUB_LOG:-}" ]; then
-  printf '%s\n' "$*" >>"$CHECKOV_STUB_LOG"
+if [ -n "\${${log_variable}:-}" ]; then
+  printf '%s\n' "\$*" >>"\$${log_variable}"
 fi
 
 exit 0
 STUB
-  chmod +x "$home_dir/bin/checkov"
-}
-
-make_home_tflint_stub() {
-  home_dir=$1
-
-  mkdir -p "$home_dir/bin"
-  cat >"$home_dir/bin/tflint" <<'STUB'
-#!/usr/bin/env sh
-set -eu
-
-if [ -n "${TFLINT_STUB_LOG:-}" ]; then
-  printf '%s\n' "$*" >>"$TFLINT_STUB_LOG"
-fi
-
-exit 0
-STUB
-  chmod +x "$home_dir/bin/tflint"
+  chmod +x "$stub_path"
 }
 
 make_target_repo() {
